@@ -1,0 +1,293 @@
+syntax = "proto3";
+
+package eval.v1;
+option go_package = "github.com/tincans-ai/evalite/gen/eval/v1;evalv1";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+
+message Variable {
+  string name = 1;
+  VariableType type = 2;
+}
+
+enum VariableType {
+  TEXT = 0;
+  IMAGE = 1;
+  // TODO: add audio, video, etc.
+}
+
+message VariableValue {
+  oneof value {
+    string text_value = 1;
+    bytes image_value = 2;
+  }
+}
+
+message ModelConfig {
+  string provider_type = 1;
+  string model_name = 2;
+  string base_url = 3;
+}
+
+message MessageOptions {
+  int32 max_tokens = 1;
+  float temperature = 2;
+}
+
+message InferMessage {
+  string content = 1;
+  string role = 2;
+  bytes image = 3;
+  bool should_cache = 4;
+}
+
+message InferRequest {
+  string request_id = 1;
+  repeated InferMessage messages = 2;
+  ModelConfig model_config = 3;
+  MessageOptions message_options = 4;
+}
+
+message EvaluationRequest {
+  string workspace_id = 1;
+  TestCase test_case = 2;
+  uint32 version_number = 3;
+}
+
+message EvaluationResponse {
+  repeated TestResult result = 1;
+}
+
+message WorkspaceConfig {
+  string id = 1;
+  string name = 2;
+  string model_config_name = 3;
+  MessageOptions message_options = 4;
+  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp updated_at = 6;
+
+  bool active = 7;
+}
+
+message CreateWorkspaceConfigRequest {
+  string workspace_id = 1;
+  string name = 2;
+  string model_config_name = 3;
+  MessageOptions message_options = 4;
+}
+
+message CreateWorkspaceConfigResponse {
+  WorkspaceConfig workspace_config = 1;
+}
+
+message Workspace {
+  string id = 1;
+  string name = 2;
+  repeated string model_config_names = 3;
+
+  google.protobuf.Timestamp created_at = 4;
+  google.protobuf.Timestamp updated_at = 5;
+
+  message Prompt {
+    uint32 version_number = 1;
+    string content = 2;
+    repeated Variable variables = 3;
+    google.protobuf.Timestamp created_at = 4;
+  }
+
+  repeated Prompt prompts = 6;
+  uint32 current_prompt_version_number = 7;
+
+  repeated WorkspaceConfig workspace_configs = 8;
+  repeated uint32 active_version_numbers = 9;
+}
+
+message TestCase {
+  string id = 1;
+  string workspace_id = 2;
+  map<string, VariableValue> variable_values = 3;
+  optional string response = 4;
+  bool has_been_evaluated = 5;
+  google.protobuf.Timestamp created_at = 6;
+  google.protobuf.Timestamp updated_at = 7;
+}
+
+message TestResult {
+  string id = 1;
+  string test_case_id = 2;
+  string response = 3;
+  uint32 prompt_version_number = 4;
+  string model_config_name = 5;
+  MessageOptions message_options = 6;
+  string workspace_config_id = 7;
+
+  google.protobuf.Timestamp created_at = 8;
+  google.protobuf.Timestamp updated_at = 9;
+}
+
+// CRUD operation messages
+message CreateWorkspaceRequest {
+  string name = 1;
+  string content = 2;
+}
+
+message GetWorkspaceRequest {
+  string id = 1;
+}
+
+message ListWorkspacesRequest {
+  int32 page = 1;
+  int32 page_size = 2;
+}
+
+message ListWorkspacesResponse {
+  repeated Workspace workspaces = 1;
+  int32 total_count = 2;
+}
+
+message GetPromptRequest {
+  string id = 1;
+}
+
+message ListTestCasesRequest {
+  string workspace_id = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+}
+
+message ListTestCasesResponse {
+  repeated TestCase test_cases = 1;
+  int32 total_count = 2;
+  repeated TestResult test_results = 3;
+}
+
+message CreatePromptVersionRequest {
+  string prompt_id = 1;
+  string content = 2;
+  uint32 version_number = 3;
+}
+
+message CreateWorkspaceResponse {
+  Workspace workspace = 1;
+}
+
+message GetWorkspaceResponse {
+  Workspace workspace = 1;
+}
+
+message CreateTestCaseRequest {
+  string workspace_id = 1;
+  map<string, VariableValue> variable_values = 2;
+}
+
+message CreateTestCaseResponse {
+  TestCase test_case = 1;
+}
+
+message DeleteTestCaseRequest {
+  string id = 1;
+}
+
+// GeneratePromptRequest uses LLM to generate a prompt
+message GeneratePromptRequest {
+  string prompt = 1;
+  string model_config_name = 2;
+}
+
+message GeneratePromptResponse {
+  string generated_prompt = 1;
+}
+
+message ListModelConfigsRequest {}
+
+message ListModelConfigsResponse {
+  map <string, ModelConfig> model_configs = 1;
+}
+
+message SetDefaultSmallModelConfigRequest {
+  string model_config_name = 1;
+}
+
+message SetDefaultLargeModelConfigRequest {
+  string model_config_name = 1;
+}
+
+message GetModelConfigResponse {
+  ModelConfig model_config = 1;
+  string model_config_name = 2;
+}
+
+message UpdateWorkspaceRequest {
+  string workspace_id = 1;
+  string new_content = 2;
+  optional string new_title = 3;
+}
+
+message UpdateWorkspaceResponse {
+  uint32 new_version_number = 1;
+  string content = 2;
+  google.protobuf.Timestamp updated_at = 4;
+}
+
+message GenerateTestCaseRequest {
+  string workspace_id = 1;
+  uint32 version_number = 2;
+  repeated TestCase test_cases = 3;
+  optional string custom_cot = 4;
+}
+
+message GenerateTestCaseResponse {
+  TestCase test_case = 1;
+}
+
+message DeleteWorkspaceConfigRequest {
+  string workspace_id = 1;
+  string workspace_config_id = 2;
+}
+
+message SetWorkspaceConfigActiveRequest {
+  string workspace_id = 1;
+  string workspace_config_id = 2;
+  bool active = 3;
+}
+
+message SetVersionActiveRequest {
+  string workspace_id = 1;
+  uint32 version_number = 2;
+  bool active = 3;
+}
+
+// Extended EvaluationService
+service EvaluationService {
+  rpc Evaluate(EvaluationRequest) returns (EvaluationResponse) {}
+
+  // Workspace operations
+  rpc CreateWorkspace(CreateWorkspaceRequest) returns (CreateWorkspaceResponse) {}
+  rpc GetWorkspace(GetWorkspaceRequest) returns (GetWorkspaceResponse) {}
+  rpc ListWorkspaces(ListWorkspacesRequest) returns (ListWorkspacesResponse) {}
+  rpc UpdateWorkspace(UpdateWorkspaceRequest) returns (UpdateWorkspaceResponse) {}
+
+  // Prompt operations
+  rpc GeneratePrompt(GeneratePromptRequest) returns (GeneratePromptResponse) {}
+
+  // TestCase operations
+  rpc CreateTestCase(CreateTestCaseRequest) returns (CreateTestCaseResponse) {}
+  rpc ListTestCases(ListTestCasesRequest) returns (ListTestCasesResponse) {}
+  rpc GenerateTestCase(GenerateTestCaseRequest) returns (GenerateTestCaseResponse) {}
+  rpc DeleteTestCase(DeleteTestCaseRequest) returns (google.protobuf.Empty) {}
+
+  // ModelConfig operations
+  rpc ListModelConfigs(google.protobuf.Empty) returns (ListModelConfigsResponse) {}
+  rpc GetDefaultSmallModelConfig(google.protobuf.Empty) returns (GetModelConfigResponse) {}
+  rpc GetDefaultLargeModelConfig(google.protobuf.Empty) returns (GetModelConfigResponse) {}
+
+  rpc SetDefaultSmallModelConfig(SetDefaultSmallModelConfigRequest) returns (google.protobuf.Empty) {}
+  rpc SetDefaultLargeModelConfig(SetDefaultLargeModelConfigRequest) returns (google.protobuf.Empty) {}
+
+  rpc CreateWorkspaceConfig(CreateWorkspaceConfigRequest) returns (CreateWorkspaceConfigResponse) {}
+  rpc DeleteWorkspaceConfig(DeleteWorkspaceConfigRequest) returns (google.protobuf.Empty) {}
+  rpc SetWorkspaceConfigActive(SetWorkspaceConfigActiveRequest) returns (google.protobuf.Empty) {}
+
+  rpc SetVersionActive(SetVersionActiveRequest) returns (google.protobuf.Empty) {}
+}
