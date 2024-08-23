@@ -52,9 +52,34 @@ func (s *Service) Evaluate(ctx context.Context, req *connect.Request[pb.Evaluati
 		return nil, fmt.Errorf("workspace not found: %w", err)
 	}
 
+	testCaseID := req.Msg.TestCase.Id
 	var newTestCase TestCase
-	if err := s.db.First(&newTestCase, "id = ?", req.Msg.TestCase.Id).Error; err != nil {
-		return nil, fmt.Errorf("test case not found: %w", err)
+	if err := s.db.First(&newTestCase, "id = ?", testCaseID).Error; err != nil {
+		// if the test case is not found, create it
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			varValues := make(map[string]VariableValue)
+			for k, v := range req.Msg.TestCase.VariableValues {
+				switch v.Value.(type) {
+				case *pb.VariableValue_TextValue:
+					varValues[k] = VariableValue{
+						TextValue: &v.Value.(*pb.VariableValue_TextValue).TextValue,
+					}
+				case *pb.VariableValue_ImageValue:
+					varValues[k] = VariableValue{
+						ImageValue: v.GetImageValue(),
+					}
+				}
+			}
+			testCaseID = xid.New().String()
+			newTestCase = TestCase{
+				ID:             testCaseID,
+				VariableValues: varValues,
+				WorkspaceID:    workspace.ID,
+			}
+			if err := s.db.Create(&newTestCase).Error; err != nil {
+				return nil, fmt.Errorf("failed to create test case: %w", err)
+			}
+		}
 	}
 	// if the test case is updated in the request vs db, save
 	anyDifferent := false
@@ -103,7 +128,7 @@ func (s *Service) Evaluate(ctx context.Context, req *connect.Request[pb.Evaluati
 		if wc.Active {
 			// check if we've run this test already - keyed on model config ID and test case ID and prompt version number
 			var tr TestResult
-			if err := s.db.First(&tr, "workspace_config_id = ? AND test_case_id = ? AND prompt_version_number = ?", wc.ID, req.Msg.TestCase.Id, req.Msg.VersionNumber).Error; err == nil {
+			if err := s.db.First(&tr, "workspace_config_id = ? AND test_case_id = ? AND prompt_version_number = ?", wc.ID, testCaseID, req.Msg.VersionNumber).Error; err == nil {
 				logger.Debug("found existing test result", "tr", tr)
 				continue
 			} else if !errors.Is(err, gorm.ErrRecordNotFound) {
