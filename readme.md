@@ -1,6 +1,6 @@
 # evalite
 
-Poor man's LLM eval platform. 
+Poor man's LLM eval platform. Still under active development.
 
 ![evalite](./screenshot.png)
 
@@ -11,6 +11,7 @@ Poor man's LLM eval platform.
 - Autogenerate prompts from task description
 - Autogenerate test cases from prompt
 - Run test cases against multiple LLM versions / sampling strategies
+- XML output formatting
 
 Future:
 
@@ -31,7 +32,7 @@ go run cmd/serverd/main.go
 cd frontend && bun run dev
 ```
 
-The go server must be able to load env vars corresponding to your LLM provider API keys. This can be via a .env file or via the environment.
+The go server must be able to load env vars corresponding to your LLM provider API keys (eg `$OPENAI_API_KEY`). This can be via a .env file or via the environment.
 
 If the keys are found, the server will automatically load support for the LLM provider and make it available to the frontend.
 
