@@ -21,7 +21,7 @@ import {Input} from "@/components/ui/input";
 import WorkspaceSettingsDialog from "@/components/WorkspaceSettingsDialog";
 import {Badge} from "@/components/ui/badge.tsx";
 import XMLViewer from 'react-xml-viewer'
-
+import {Copy} from "lucide-react";
 
 interface PromptTesterProps {
     workspaceId: string;
@@ -42,6 +42,61 @@ type ListTestCasesRequestWithoutMethods = Omit<
 >;
 
 type TestResultWithoutMethods = Omit<TestResult, "toJSON" | "toProtobuf" | "clone">;
+
+const CopyButton = ({ content } : { content: string}) => {
+    const handleCopy = () => {
+        navigator.clipboard.writeText(content).then(() => {
+            // You can add a toast notification here if you want
+            console.log('Copied to clipboard');
+        });
+    };
+
+    return (
+        <Button
+            variant="outline"
+            size="icon"
+            className="absolute top-2 right-2"
+            onClick={handleCopy}
+        >
+            <Copy className="h-4 w-4" />
+        </Button>
+    );
+};
+
+const EnhancedTableCell = ({ matchingResult, xmlMode, versionNumber, onRunTest }) => {
+    return (
+        <TableCell className="relative">
+            {matchingResult ? (
+                <div>
+                    <CopyButton content={matchingResult.response} />
+                    <pre className="max-h-40 overflow-auto max-w-md text-wrap">
+            {xmlMode ? (
+                <XMLViewer xml={matchingResult.response} collapsible />
+            ) : (
+                <div>{matchingResult.response}</div>
+            )}
+          </pre>
+                    <Badge variant="outline" className="mt-2">
+                        v{matchingResult.promptVersionNumber}
+                    </Badge>
+                </div>
+            ) : (
+                <div className="space-x-2">
+                    <Badge variant="outline" className="mt-2">
+                        v{versionNumber}
+                    </Badge>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={onRunTest}
+                    >
+                        Run
+                    </Button>
+                </div>
+            )}
+        </TableCell>
+    );
+};
 
 const PromptTester: React.FC<PromptTesterProps> = ({
                                                        workspaceId,
@@ -278,31 +333,8 @@ const PromptTester: React.FC<PromptTesterProps> = ({
                                                 tr.promptVersionNumber === version.versionNumber,
                                         );
 
-                                        return matchingResult ? (
-                                            <div key={matchingResult.id}>
-                                                <pre className="max-h-40 overflow-auto max-w-md text-wrap">
-                                                    {xmlMode ? <XMLViewer xml={matchingResult.response} collapsible/> : <div>{matchingResult.response}</div>}
-                                                </pre>
-                                                <Badge variant="outline" className="mt-2">
-                                                    v{matchingResult.promptVersionNumber}
-                                                </Badge>
-                                            </div>
-                                        ) : (
-                                            <div key={version.versionNumber} className={"space-x-2"}>
-                                                <Badge variant="outline" className="mt-2">
-                                                    v{version.versionNumber}
-                                                </Badge>
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={() =>
-                                                        handleRunTest(testCase, version.versionNumber)
-                                                    }
-                                                >
-                                                    Run
-                                                </Button>
-                                            </div>
-                                        );
+                                        return <EnhancedTableCell matchingResult={matchingResult} onRunTest={() => handleRunTest(testCase, version.versionNumber)} xmlMode={xmlMode} versionNumber={version.versionNumber} />;
+
                                     })}
                                 </TableCell>
                             ))}
