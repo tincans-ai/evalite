@@ -86,6 +86,7 @@ func (s *Service) ListTestCases(ctx context.Context, req *connect.Request[evalv1
 					Temperature: tr.MessageOptions.Temperature,
 				},
 				WorkspaceConfigId: tr.WorkspaceConfigID,
+				Rating:            tr.Rating,
 			})
 		}
 
@@ -277,6 +278,24 @@ func (s *Service) DeleteTestCase(ctx context.Context, req *connect.Request[evalv
 	result := s.db.Where("id = ?", req.Msg.Id).Delete(&TestCase{})
 	if result.Error != nil {
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to delete test case: %v", result.Error))
+	}
+
+	res := connect.NewResponse(&emptypb.Empty{})
+	res.Header().Set("Eval-Version", "v1")
+	return res, nil
+}
+
+func (s *Service) RateTestResult(ctx context.Context, req *connect.Request[evalv1.RateTestResultRequest]) (*connect.Response[emptypb.Empty], error) {
+	var tr TestResult
+	result := s.db.Model(&TestResult{}).Where("id = ?", req.Msg.TestResultId).First(&tr)
+	if result.Error != nil {
+		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to load test result: %v", result.Error))
+	}
+
+	tr.Rating = req.Msg.Rating
+	result = s.db.Save(&tr)
+	if result.Error != nil {
+		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to save test result: %v", result.Error))
 	}
 
 	res := connect.NewResponse(&emptypb.Empty{})

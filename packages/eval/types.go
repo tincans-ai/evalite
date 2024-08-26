@@ -139,6 +139,7 @@ type TestResult struct {
 	PromptVersionNumber uint32
 	ModelConfigName     string
 	WorkspaceConfigID   string
+	Rating              int32
 	MessageOptions      MessageOptions `gorm:"embedded"`
 	CreatedAt           time.Time
 	UpdatedAt           time.Time

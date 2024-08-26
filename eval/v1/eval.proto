@@ -126,6 +126,9 @@ message TestResult {
 
   google.protobuf.Timestamp created_at = 8;
   google.protobuf.Timestamp updated_at = 9;
+
+  // rating is -1 (thumbs down), 0 (unrated), or 1 (thumbs up)
+  int32 rating = 10;
 }
 
 // CRUD operation messages
@@ -265,6 +268,11 @@ message SetXMLModeRequest {
   bool XMLMode = 2;
 }
 
+message RateTestResultRequest {
+  string test_result_id = 1;
+  int32 rating = 2;
+}
+
 // Extended EvaluationService
 service EvaluationService {
   rpc Evaluate(EvaluationRequest) returns (EvaluationResponse) {}
@@ -298,4 +306,5 @@ service EvaluationService {
 
   rpc SetVersionActive(SetVersionActiveRequest) returns (google.protobuf.Empty) {}
   rpc SetXMLMode(SetXMLModeRequest) returns (google.protobuf.Empty) {}
+  rpc RateTestResult(RateTestResultRequest) returns (google.protobuf.Empty) {}
 }

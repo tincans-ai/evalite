@@ -94,6 +94,9 @@ const (
 	// EvaluationServiceSetXMLModeProcedure is the fully-qualified name of the EvaluationService's
 	// SetXMLMode RPC.
 	EvaluationServiceSetXMLModeProcedure = "/eval.v1.EvaluationService/SetXMLMode"
+	// EvaluationServiceRateTestResultProcedure is the fully-qualified name of the EvaluationService's
+	// RateTestResult RPC.
+	EvaluationServiceRateTestResultProcedure = "/eval.v1.EvaluationService/RateTestResult"
 )
 
 // These variables are the protoreflect.Descriptor objects for the RPCs defined in this package.
@@ -119,6 +122,7 @@ var (
 	evaluationServiceSetWorkspaceConfigActiveMethodDescriptor   = evaluationServiceServiceDescriptor.Methods().ByName("SetWorkspaceConfigActive")
 	evaluationServiceSetVersionActiveMethodDescriptor           = evaluationServiceServiceDescriptor.Methods().ByName("SetVersionActive")
 	evaluationServiceSetXMLModeMethodDescriptor                 = evaluationServiceServiceDescriptor.Methods().ByName("SetXMLMode")
+	evaluationServiceRateTestResultMethodDescriptor             = evaluationServiceServiceDescriptor.Methods().ByName("RateTestResult")
 )
 
 // EvaluationServiceClient is a client for the eval.v1.EvaluationService service.
@@ -147,6 +151,7 @@ type EvaluationServiceClient interface {
 	SetWorkspaceConfigActive(context.Context, *connect.Request[v1.SetWorkspaceConfigActiveRequest]) (*connect.Response[emptypb.Empty], error)
 	SetVersionActive(context.Context, *connect.Request[v1.SetVersionActiveRequest]) (*connect.Response[emptypb.Empty], error)
 	SetXMLMode(context.Context, *connect.Request[v1.SetXMLModeRequest]) (*connect.Response[emptypb.Empty], error)
+	RateTestResult(context.Context, *connect.Request[v1.RateTestResultRequest]) (*connect.Response[emptypb.Empty], error)
 }
 
 // NewEvaluationServiceClient constructs a client for the eval.v1.EvaluationService service. By
@@ -279,6 +284,12 @@ func NewEvaluationServiceClient(httpClient connect.HTTPClient, baseURL string, o
 			connect.WithSchema(evaluationServiceSetXMLModeMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
+		rateTestResult: connect.NewClient[v1.RateTestResultRequest, emptypb.Empty](
+			httpClient,
+			baseURL+EvaluationServiceRateTestResultProcedure,
+			connect.WithSchema(evaluationServiceRateTestResultMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -304,6 +315,7 @@ type evaluationServiceClient struct {
 	setWorkspaceConfigActive   *connect.Client[v1.SetWorkspaceConfigActiveRequest, emptypb.Empty]
 	setVersionActive           *connect.Client[v1.SetVersionActiveRequest, emptypb.Empty]
 	setXMLMode                 *connect.Client[v1.SetXMLModeRequest, emptypb.Empty]
+	rateTestResult             *connect.Client[v1.RateTestResultRequest, emptypb.Empty]
 }
 
 // Evaluate calls eval.v1.EvaluationService.Evaluate.
@@ -406,6 +418,11 @@ func (c *evaluationServiceClient) SetXMLMode(ctx context.Context, req *connect.R
 	return c.setXMLMode.CallUnary(ctx, req)
 }
 
+// RateTestResult calls eval.v1.EvaluationService.RateTestResult.
+func (c *evaluationServiceClient) RateTestResult(ctx context.Context, req *connect.Request[v1.RateTestResultRequest]) (*connect.Response[emptypb.Empty], error) {
+	return c.rateTestResult.CallUnary(ctx, req)
+}
+
 // EvaluationServiceHandler is an implementation of the eval.v1.EvaluationService service.
 type EvaluationServiceHandler interface {
 	Evaluate(context.Context, *connect.Request[v1.EvaluationRequest]) (*connect.Response[v1.EvaluationResponse], error)
@@ -432,6 +449,7 @@ type EvaluationServiceHandler interface {
 	SetWorkspaceConfigActive(context.Context, *connect.Request[v1.SetWorkspaceConfigActiveRequest]) (*connect.Response[emptypb.Empty], error)
 	SetVersionActive(context.Context, *connect.Request[v1.SetVersionActiveRequest]) (*connect.Response[emptypb.Empty], error)
 	SetXMLMode(context.Context, *connect.Request[v1.SetXMLModeRequest]) (*connect.Response[emptypb.Empty], error)
+	RateTestResult(context.Context, *connect.Request[v1.RateTestResultRequest]) (*connect.Response[emptypb.Empty], error)
 }
 
 // NewEvaluationServiceHandler builds an HTTP handler from the service implementation. It returns
@@ -560,6 +578,12 @@ func NewEvaluationServiceHandler(svc EvaluationServiceHandler, opts ...connect.H
 		connect.WithSchema(evaluationServiceSetXMLModeMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
+	evaluationServiceRateTestResultHandler := connect.NewUnaryHandler(
+		EvaluationServiceRateTestResultProcedure,
+		svc.RateTestResult,
+		connect.WithSchema(evaluationServiceRateTestResultMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/eval.v1.EvaluationService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case EvaluationServiceEvaluateProcedure:
@@ -602,6 +626,8 @@ func NewEvaluationServiceHandler(svc EvaluationServiceHandler, opts ...connect.H
 			evaluationServiceSetVersionActiveHandler.ServeHTTP(w, r)
 		case EvaluationServiceSetXMLModeProcedure:
 			evaluationServiceSetXMLModeHandler.ServeHTTP(w, r)
+		case EvaluationServiceRateTestResultProcedure:
+			evaluationServiceRateTestResultHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -689,4 +715,8 @@ func (UnimplementedEvaluationServiceHandler) SetVersionActive(context.Context, *
 
 func (UnimplementedEvaluationServiceHandler) SetXMLMode(context.Context, *connect.Request[v1.SetXMLModeRequest]) (*connect.Response[emptypb.Empty], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("eval.v1.EvaluationService.SetXMLMode is not implemented"))
+}
+
+func (UnimplementedEvaluationServiceHandler) RateTestResult(context.Context, *connect.Request[v1.RateTestResultRequest]) (*connect.Response[emptypb.Empty], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("eval.v1.EvaluationService.RateTestResult is not implemented"))
 }

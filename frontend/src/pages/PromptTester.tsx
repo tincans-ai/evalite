@@ -5,6 +5,7 @@ import {
     GenerateTestCaseRequest,
     GetWorkspaceResponse,
     ListTestCasesRequest,
+    RateTestResultRequest,
     TestCase,
     TestResult,
     Variable,
@@ -21,7 +22,7 @@ import {Input} from "@/components/ui/input";
 import WorkspaceSettingsDialog from "@/components/WorkspaceSettingsDialog";
 import {Badge} from "@/components/ui/badge.tsx";
 import XMLViewer from 'react-xml-viewer'
-import {Copy} from "lucide-react";
+import {Copy, PlayIcon, ThumbsDown, ThumbsUp} from "lucide-react";
 
 interface PromptTesterProps {
     workspaceId: string;
@@ -43,55 +44,92 @@ type ListTestCasesRequestWithoutMethods = Omit<
 
 type TestResultWithoutMethods = Omit<TestResult, "toJSON" | "toProtobuf" | "clone">;
 
-const CopyButton = ({ content } : { content: string}) => {
+const EnhancedTableCell = ({matchingResult, xmlMode, versionNumber, onRunTest, handleRating}) => {
     const handleCopy = () => {
-        navigator.clipboard.writeText(content).then(() => {
+        navigator.clipboard.writeText(matchingResult?.content).then(() => {
             // You can add a toast notification here if you want
             console.log('Copied to clipboard');
         });
+    }
+
+    const onThumbsUp = () => {
+        handleRating(1, matchingResult?.id);
+        matchingResult.rating = 1;
+    }
+
+    const onThumbsDown = () => {
+        handleRating(-1, matchingResult?.id);
+        matchingResult.rating = -1;
+    }
+
+    const ActionBar = ({onCopy, onRetry, onThumbsUp, onThumbsDown}) => {
+        return (
+            <div className="flex items-center space-x-2 rounded-md p-1">
+                <Button variant="ghost" size="icon" onClick={onCopy} title="Copy">
+                    <Copy className="h-4 w-4 text-gray-600"/>
+                </Button>
+                {/*<Button variant="ghost" size="icon" onClick={onRetry} title="Retry">*/}
+                {/*    <RotateCcw className="h-4 w-4 text-gray-300" />*/}
+                {/*</Button>*/}
+                <div className="h-4 w-px bg-gray-600 mx-1"/>
+                {/* Separator */}
+                <Button variant="ghost" size="icon" onClick={onThumbsUp} title="Thumbs Up"
+                        disabled={matchingResult?.rating === 1}>
+                    <ThumbsUp className="h-4 w-4 text-gray-600" color={matchingResult?.rating === 1 ? "green" : "gray"}/>
+                </Button>
+                <Button variant="ghost" size="icon" onClick={onThumbsDown} title="Thumbs Down"
+                        disabled={matchingResult?.rating === -1}>
+                    <ThumbsDown className="h-4 w-4 text-gray-600" color={matchingResult?.rating === -1 ? "red" : "gray"}/>
+                </Button>
+            </div>
+        );
     };
 
-    return (
-        <Button
-            variant="outline"
-            size="icon"
-            className="absolute top-2 right-2"
-            onClick={handleCopy}
-        >
-            <Copy className="h-4 w-4" />
-        </Button>
+    const ContentRenderer = ({content, xmlMode}) => (
+        <div className="max-h-40 overflow-auto max-w-md text-wrap text-xs">
+            {xmlMode ? (
+                <XMLViewer xml={content} collapsible/>
+            ) : (
+                <pre>{content}</pre>
+            )}
+        </div>
     );
-};
 
-const EnhancedTableCell = ({ matchingResult, xmlMode, versionNumber, onRunTest }) => {
     return (
         <TableCell className="relative">
             {matchingResult ? (
-                <div>
-                    <CopyButton content={matchingResult.response} />
-                    <pre className="max-h-40 overflow-auto max-w-md text-wrap">
-            {xmlMode ? (
-                <XMLViewer xml={matchingResult.response} collapsible />
+                <>
+                    <ContentRenderer
+                        content={matchingResult.response}
+                        xmlMode={xmlMode}
+                    />
+                    <div className="flex flex-row justify-between mt-2 items-center">
+                        <Badge variant="outline">
+                            v{matchingResult.promptVersionNumber}
+                        </Badge>
+                        <ActionBar
+                            onCopy={handleCopy}
+                            onThumbsUp={onThumbsUp}
+                            onThumbsDown={onThumbsDown}
+                        />
+                    </div>
+                </>
             ) : (
-                <div>{matchingResult.response}</div>
-            )}
-          </pre>
-                    <Badge variant="outline" className="mt-2">
-                        v{matchingResult.promptVersionNumber}
-                    </Badge>
-                </div>
-            ) : (
-                <div className="space-x-2">
-                    <Badge variant="outline" className="mt-2">
+                <div className="flex flex-row justify-between items-center">
+                    <Badge variant="outline">
                         v{versionNumber}
                     </Badge>
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={onRunTest}
-                    >
-                        Run
-                    </Button>
+
+                    <div className={"flex"}>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={onRunTest}
+                        >
+                            <PlayIcon className="mr-2 h-4 w-4" />
+                            Run
+                        </Button>
+                    </div>
                 </div>
             )}
         </TableCell>
@@ -287,6 +325,12 @@ const PromptTester: React.FC<PromptTesterProps> = ({
         }
     };
 
+    const handleRating = (rating: number, testResultID: string) => {
+        client.rateTestResult({testResultId: testResultID, rating: rating} as RateTestResultRequest).then(() => {
+            console.log('Rating submitted');
+        });
+    };
+
     return (
         <div className="space-y-4 w-full flex-shrink-0">
             <Table>
@@ -333,7 +377,12 @@ const PromptTester: React.FC<PromptTesterProps> = ({
                                                 tr.promptVersionNumber === version.versionNumber,
                                         );
 
-                                        return <EnhancedTableCell matchingResult={matchingResult} onRunTest={() => handleRunTest(testCase, version.versionNumber)} xmlMode={xmlMode} versionNumber={version.versionNumber} />;
+                                        return <EnhancedTableCell matchingResult={matchingResult}
+                                                                  onRunTest={() => handleRunTest(testCase, version.versionNumber)}
+                                                                  xmlMode={xmlMode}
+                                                                  versionNumber={version.versionNumber}
+                                                                  handleRating={handleRating}
+                                        />;
 
                                     })}
                                 </TableCell>

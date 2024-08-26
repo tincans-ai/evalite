@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { CreateTestCaseRequest, CreateTestCaseResponse, CreateWorkspaceConfigRequest, CreateWorkspaceConfigResponse, CreateWorkspaceRequest, CreateWorkspaceResponse, DeleteTestCaseRequest, DeleteWorkspaceConfigRequest, EvaluationRequest, EvaluationResponse, GeneratePromptRequest, GeneratePromptResponse, GenerateTestCaseRequest, GenerateTestCaseResponse, GetModelConfigResponse, GetWorkspaceRequest, GetWorkspaceResponse, ListModelConfigsResponse, ListTestCasesRequest, ListTestCasesResponse, ListWorkspacesRequest, ListWorkspacesResponse, SetDefaultLargeModelConfigRequest, SetDefaultSmallModelConfigRequest, SetVersionActiveRequest, SetWorkspaceConfigActiveRequest, SetXMLModeRequest, UpdateWorkspaceRequest, UpdateWorkspaceResponse } from "./eval_pb.js";
+import { CreateTestCaseRequest, CreateTestCaseResponse, CreateWorkspaceConfigRequest, CreateWorkspaceConfigResponse, CreateWorkspaceRequest, CreateWorkspaceResponse, DeleteTestCaseRequest, DeleteWorkspaceConfigRequest, EvaluationRequest, EvaluationResponse, GeneratePromptRequest, GeneratePromptResponse, GenerateTestCaseRequest, GenerateTestCaseResponse, GetModelConfigResponse, GetWorkspaceRequest, GetWorkspaceResponse, ListModelConfigsResponse, ListTestCasesRequest, ListTestCasesResponse, ListWorkspacesRequest, ListWorkspacesResponse, RateTestResultRequest, SetDefaultLargeModelConfigRequest, SetDefaultSmallModelConfigRequest, SetVersionActiveRequest, SetWorkspaceConfigActiveRequest, SetXMLModeRequest, UpdateWorkspaceRequest, UpdateWorkspaceResponse } from "./eval_pb.js";
 import { Empty, MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -199,6 +199,15 @@ export const EvaluationService = {
     setXMLMode: {
       name: "SetXMLMode",
       I: SetXMLModeRequest,
+      O: Empty,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * @generated from rpc eval.v1.EvaluationService.RateTestResult
+     */
+    rateTestResult: {
+      name: "RateTestResult",
+      I: RateTestResultRequest,
       O: Empty,
       kind: MethodKind.Unary,
     },

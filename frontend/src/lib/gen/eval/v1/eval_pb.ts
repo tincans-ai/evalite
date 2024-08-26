@@ -842,6 +842,13 @@ export class TestResult extends Message<TestResult> {
    */
   updatedAt?: Timestamp;
 
+  /**
+   * rating is -1 (thumbs down), 0 (unrated), or 1 (thumbs up)
+   *
+   * @generated from field: int32 rating = 10;
+   */
+  rating = 0;
+
   constructor(data?: PartialMessage<TestResult>) {
     super();
     proto3.util.initPartial(data, this);
@@ -859,6 +866,7 @@ export class TestResult extends Message<TestResult> {
     { no: 7, name: "workspace_config_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "created_at", kind: "message", T: Timestamp },
     { no: 9, name: "updated_at", kind: "message", T: Timestamp },
+    { no: 10, name: "rating", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): TestResult {
@@ -2059,6 +2067,49 @@ export class SetXMLModeRequest extends Message<SetXMLModeRequest> {
 
   static equals(a: SetXMLModeRequest | PlainMessage<SetXMLModeRequest> | undefined, b: SetXMLModeRequest | PlainMessage<SetXMLModeRequest> | undefined): boolean {
     return proto3.util.equals(SetXMLModeRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message eval.v1.RateTestResultRequest
+ */
+export class RateTestResultRequest extends Message<RateTestResultRequest> {
+  /**
+   * @generated from field: string test_result_id = 1;
+   */
+  testResultId = "";
+
+  /**
+   * @generated from field: int32 rating = 2;
+   */
+  rating = 0;
+
+  constructor(data?: PartialMessage<RateTestResultRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "eval.v1.RateTestResultRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "test_result_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "rating", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RateTestResultRequest {
+    return new RateTestResultRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): RateTestResultRequest {
+    return new RateTestResultRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): RateTestResultRequest {
+    return new RateTestResultRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: RateTestResultRequest | PlainMessage<RateTestResultRequest> | undefined, b: RateTestResultRequest | PlainMessage<RateTestResultRequest> | undefined): boolean {
+    return proto3.util.equals(RateTestResultRequest, a, b);
   }
 }
 
