@@ -91,6 +91,9 @@ const (
 	// EvaluationServiceSetVersionActiveProcedure is the fully-qualified name of the EvaluationService's
 	// SetVersionActive RPC.
 	EvaluationServiceSetVersionActiveProcedure = "/eval.v1.EvaluationService/SetVersionActive"
+	// EvaluationServiceSetXMLModeProcedure is the fully-qualified name of the EvaluationService's
+	// SetXMLMode RPC.
+	EvaluationServiceSetXMLModeProcedure = "/eval.v1.EvaluationService/SetXMLMode"
 )
 
 // These variables are the protoreflect.Descriptor objects for the RPCs defined in this package.
@@ -115,6 +118,7 @@ var (
 	evaluationServiceDeleteWorkspaceConfigMethodDescriptor      = evaluationServiceServiceDescriptor.Methods().ByName("DeleteWorkspaceConfig")
 	evaluationServiceSetWorkspaceConfigActiveMethodDescriptor   = evaluationServiceServiceDescriptor.Methods().ByName("SetWorkspaceConfigActive")
 	evaluationServiceSetVersionActiveMethodDescriptor           = evaluationServiceServiceDescriptor.Methods().ByName("SetVersionActive")
+	evaluationServiceSetXMLModeMethodDescriptor                 = evaluationServiceServiceDescriptor.Methods().ByName("SetXMLMode")
 )
 
 // EvaluationServiceClient is a client for the eval.v1.EvaluationService service.
@@ -142,6 +146,7 @@ type EvaluationServiceClient interface {
 	DeleteWorkspaceConfig(context.Context, *connect.Request[v1.DeleteWorkspaceConfigRequest]) (*connect.Response[emptypb.Empty], error)
 	SetWorkspaceConfigActive(context.Context, *connect.Request[v1.SetWorkspaceConfigActiveRequest]) (*connect.Response[emptypb.Empty], error)
 	SetVersionActive(context.Context, *connect.Request[v1.SetVersionActiveRequest]) (*connect.Response[emptypb.Empty], error)
+	SetXMLMode(context.Context, *connect.Request[v1.SetXMLModeRequest]) (*connect.Response[emptypb.Empty], error)
 }
 
 // NewEvaluationServiceClient constructs a client for the eval.v1.EvaluationService service. By
@@ -268,6 +273,12 @@ func NewEvaluationServiceClient(httpClient connect.HTTPClient, baseURL string, o
 			connect.WithSchema(evaluationServiceSetVersionActiveMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
+		setXMLMode: connect.NewClient[v1.SetXMLModeRequest, emptypb.Empty](
+			httpClient,
+			baseURL+EvaluationServiceSetXMLModeProcedure,
+			connect.WithSchema(evaluationServiceSetXMLModeMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -292,6 +303,7 @@ type evaluationServiceClient struct {
 	deleteWorkspaceConfig      *connect.Client[v1.DeleteWorkspaceConfigRequest, emptypb.Empty]
 	setWorkspaceConfigActive   *connect.Client[v1.SetWorkspaceConfigActiveRequest, emptypb.Empty]
 	setVersionActive           *connect.Client[v1.SetVersionActiveRequest, emptypb.Empty]
+	setXMLMode                 *connect.Client[v1.SetXMLModeRequest, emptypb.Empty]
 }
 
 // Evaluate calls eval.v1.EvaluationService.Evaluate.
@@ -389,6 +401,11 @@ func (c *evaluationServiceClient) SetVersionActive(ctx context.Context, req *con
 	return c.setVersionActive.CallUnary(ctx, req)
 }
 
+// SetXMLMode calls eval.v1.EvaluationService.SetXMLMode.
+func (c *evaluationServiceClient) SetXMLMode(ctx context.Context, req *connect.Request[v1.SetXMLModeRequest]) (*connect.Response[emptypb.Empty], error) {
+	return c.setXMLMode.CallUnary(ctx, req)
+}
+
 // EvaluationServiceHandler is an implementation of the eval.v1.EvaluationService service.
 type EvaluationServiceHandler interface {
 	Evaluate(context.Context, *connect.Request[v1.EvaluationRequest]) (*connect.Response[v1.EvaluationResponse], error)
@@ -414,6 +431,7 @@ type EvaluationServiceHandler interface {
 	DeleteWorkspaceConfig(context.Context, *connect.Request[v1.DeleteWorkspaceConfigRequest]) (*connect.Response[emptypb.Empty], error)
 	SetWorkspaceConfigActive(context.Context, *connect.Request[v1.SetWorkspaceConfigActiveRequest]) (*connect.Response[emptypb.Empty], error)
 	SetVersionActive(context.Context, *connect.Request[v1.SetVersionActiveRequest]) (*connect.Response[emptypb.Empty], error)
+	SetXMLMode(context.Context, *connect.Request[v1.SetXMLModeRequest]) (*connect.Response[emptypb.Empty], error)
 }
 
 // NewEvaluationServiceHandler builds an HTTP handler from the service implementation. It returns
@@ -536,6 +554,12 @@ func NewEvaluationServiceHandler(svc EvaluationServiceHandler, opts ...connect.H
 		connect.WithSchema(evaluationServiceSetVersionActiveMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
+	evaluationServiceSetXMLModeHandler := connect.NewUnaryHandler(
+		EvaluationServiceSetXMLModeProcedure,
+		svc.SetXMLMode,
+		connect.WithSchema(evaluationServiceSetXMLModeMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/eval.v1.EvaluationService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case EvaluationServiceEvaluateProcedure:
@@ -576,6 +600,8 @@ func NewEvaluationServiceHandler(svc EvaluationServiceHandler, opts ...connect.H
 			evaluationServiceSetWorkspaceConfigActiveHandler.ServeHTTP(w, r)
 		case EvaluationServiceSetVersionActiveProcedure:
 			evaluationServiceSetVersionActiveHandler.ServeHTTP(w, r)
+		case EvaluationServiceSetXMLModeProcedure:
+			evaluationServiceSetXMLModeHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -659,4 +685,8 @@ func (UnimplementedEvaluationServiceHandler) SetWorkspaceConfigActive(context.Co
 
 func (UnimplementedEvaluationServiceHandler) SetVersionActive(context.Context, *connect.Request[v1.SetVersionActiveRequest]) (*connect.Response[emptypb.Empty], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("eval.v1.EvaluationService.SetVersionActive is not implemented"))
+}
+
+func (UnimplementedEvaluationServiceHandler) SetXMLMode(context.Context, *connect.Request[v1.SetXMLModeRequest]) (*connect.Response[emptypb.Empty], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("eval.v1.EvaluationService.SetXMLMode is not implemented"))
 }

@@ -101,6 +101,8 @@ message Workspace {
 
   repeated WorkspaceConfig workspace_configs = 8;
   repeated uint32 active_version_numbers = 9;
+
+  bool XMLMode = 10;
 }
 
 message TestCase {
@@ -258,6 +260,11 @@ message SetVersionActiveRequest {
   bool active = 3;
 }
 
+message SetXMLModeRequest {
+  string workspace_id = 1;
+  bool XMLMode = 2;
+}
+
 // Extended EvaluationService
 service EvaluationService {
   rpc Evaluate(EvaluationRequest) returns (EvaluationResponse) {}
@@ -290,4 +297,5 @@ service EvaluationService {
   rpc SetWorkspaceConfigActive(SetWorkspaceConfigActiveRequest) returns (google.protobuf.Empty) {}
 
   rpc SetVersionActive(SetVersionActiveRequest) returns (google.protobuf.Empty) {}
+  rpc SetXMLMode(SetXMLModeRequest) returns (google.protobuf.Empty) {}
 }

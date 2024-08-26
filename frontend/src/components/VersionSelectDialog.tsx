@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button } from "@/components/ui/button";
+import {Button} from "@/components/ui/button";
 import {
     Dialog,
     DialogContent,
@@ -8,14 +8,10 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
-import { Workspace_Prompt } from "@/lib/gen/eval/v1/eval_pb";
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue,} from "@/components/ui/select";
+import {Workspace_Prompt} from "@/lib/gen/eval/v1/eval_pb";
+import {RadioGroup, RadioGroupItem} from "@/components/ui/radio-group.tsx";
+import {Label} from "@/components/ui/label.tsx";
 
 interface VersionSelectDialogProps {
     versions: Workspace_Prompt[];
@@ -23,6 +19,8 @@ interface VersionSelectDialogProps {
     activeVersions: Workspace_Prompt[];
     onVersionSelect: (version: Workspace_Prompt) => void;
     onSetActiveVersions: (versions: Workspace_Prompt[]) => void;
+    xmlMode: boolean;
+    setXmlMode: (mode: boolean) => void;
 }
 
 const VersionSelectDialog: React.FC<VersionSelectDialogProps> = ({
@@ -31,6 +29,8 @@ const VersionSelectDialog: React.FC<VersionSelectDialogProps> = ({
                                                                      activeVersions,
                                                                      onVersionSelect,
                                                                      onSetActiveVersions,
+                                                                     xmlMode,
+                                                                     setXmlMode,
                                                                  }) => {
     const [selectedVersion, setSelectedVersion] = React.useState<Workspace_Prompt | undefined>(currentVersion);
     const [selectedActiveVersions, setSelectedActiveVersions] = React.useState<Workspace_Prompt[]>(activeVersions);
@@ -61,19 +61,20 @@ const VersionSelectDialog: React.FC<VersionSelectDialogProps> = ({
     return (
         <Dialog>
             <DialogTrigger asChild>
-                <Button variant="outline">Select Version</Button>
+                <Button variant="outline">Workspace Settings</Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
-                    <DialogTitle>Select Prompt Version</DialogTitle>
+                    <DialogTitle>Workspace Settings</DialogTitle>
                     <DialogDescription>
-                        Choose a version of the prompt to work with.
+                        Settings specific to the workspace
                     </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
+                    <p className={"text-muted-foreground"}>Choose a version of the prompt to work with.</p>
                     <Select onValueChange={handleVersionChange} defaultValue={currentVersion?.versionNumber.toString()}>
                         <SelectTrigger>
-                            <SelectValue placeholder="Select a version" />
+                            <SelectValue placeholder="Select a version"/>
                         </SelectTrigger>
                         <SelectContent>
                             {versions.map((version) => (
@@ -84,7 +85,8 @@ const VersionSelectDialog: React.FC<VersionSelectDialogProps> = ({
                         </SelectContent>
                     </Select>
                     <div className="mt-4">
-                        <label className="block text-sm font-medium text-gray-700">Active Versions (for comparison)</label>
+                        <label className="block text-sm font-medium text-gray-700">Active Versions (for
+                            comparison)</label>
                         <div className="mt-2">
                             {versions.map((version) => (
                                 <div key={version.versionNumber} className="flex items-center">
@@ -101,6 +103,28 @@ const VersionSelectDialog: React.FC<VersionSelectDialogProps> = ({
                             ))}
                         </div>
                     </div>
+                </div>
+                <div className="grid gap-4 py-4">
+                    <p className={"text-muted-foreground"}>Use XML mode?</p>
+                    <RadioGroup
+                        defaultValue={xmlMode.toString()}
+                        onValueChange={(value) => {
+                            console.log(value, value == "true")
+                            setXmlMode(value == "true")
+
+                        }}
+                        className="flex flex-col space-y-1"
+                    >
+                        <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="true" id="yes" />
+                            <Label htmlFor="yes">Yes</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="false" id="no" />
+                            <Label htmlFor="no">No</Label>
+                        </div>
+                    </RadioGroup>
+
                 </div>
                 <div className="flex justify-end">
                     <Button onClick={handleConfirm}>Confirm</Button>

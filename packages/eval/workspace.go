@@ -133,6 +133,7 @@ func (s *Service) GetWorkspace(ctx context.Context, req *connect.Request[evalv1.
 			CurrentPromptVersionNumber: workspace.CurrentPromptVersionNumber,
 			WorkspaceConfigs:           workspaceConfigs,
 			ActiveVersionNumbers:       workspace.ActiveVersionNumbers,
+			XMLMode:                    workspace.XMLMode,
 		},
 	})
 	res.Header().Set("Eval-Version", "v1")
@@ -297,6 +298,28 @@ func (s *Service) SetVersionActive(ctx context.Context, req *connect.Request[eva
 	result = s.db.Save(&workspace)
 	if result.Error != nil {
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to save prompt: %w", result.Error))
+	}
+
+	res := connect.NewResponse(&emptypb.Empty{})
+	res.Header().Set("Eval-Version", "v1")
+	return res, nil
+}
+
+func (s *Service) SetXMLMode(ctx context.Context, req *connect.Request[evalv1.SetXMLModeRequest]) (*connect.Response[emptypb.Empty], error) {
+	var workspace Workspace
+	result := s.db.First(&workspace, "id = ?", req.Msg.WorkspaceId)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("workspace not found"))
+		}
+		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to fetch workspace: %w", result.Error))
+	}
+
+	workspace.XMLMode = req.Msg.XMLMode
+
+	result = s.db.Save(&workspace)
+	if result.Error != nil {
+		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to save workspace: %w", result.Error))
 	}
 
 	res := connect.NewResponse(&emptypb.Empty{})

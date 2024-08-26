@@ -119,13 +119,13 @@ const WorkspaceSettingsDialog: React.FC<WorkspaceSettingsDialogProps> = ({worksp
     return (
         <Dialog>
             <DialogTrigger asChild>
-                <Button variant="outline">Workspace Settings</Button>
+                <Button variant="outline">Model Configs</Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[625px]">
                 <DialogHeader>
-                    <DialogTitle>Workspace Settings</DialogTitle>
+                    <DialogTitle>Model Configs</DialogTitle>
                     <DialogDescription>
-                        Create and manage workspace configurations. Multiple configurations can be active
+                        Create and manage model configurations for this workspace. Multiple configurations can be active
                         simultaneously.
                     </DialogDescription>
                 </DialogHeader>

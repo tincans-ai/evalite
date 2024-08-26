@@ -57,6 +57,7 @@ type Workspace struct {
 	WorkspaceConfigs           []WorkspaceConfig `gorm:"foreignKey:WorkspaceID"`
 	CurrentPromptVersionNumber uint32
 	ActiveVersionNumbers       datatypes.JSONSlice[uint32]
+	XMLMode                    bool
 }
 
 type WorkspaceConfig struct {

@@ -623,6 +623,11 @@ export class Workspace extends Message<Workspace> {
    */
   activeVersionNumbers: number[] = [];
 
+  /**
+   * @generated from field: bool XMLMode = 10;
+   */
+  XMLMode = false;
+
   constructor(data?: PartialMessage<Workspace>) {
     super();
     proto3.util.initPartial(data, this);
@@ -640,6 +645,7 @@ export class Workspace extends Message<Workspace> {
     { no: 7, name: "current_prompt_version_number", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 8, name: "workspace_configs", kind: "message", T: WorkspaceConfig, repeated: true },
     { no: 9, name: "active_version_numbers", kind: "scalar", T: 13 /* ScalarType.UINT32 */, repeated: true },
+    { no: 10, name: "XMLMode", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Workspace {
@@ -2010,6 +2016,49 @@ export class SetVersionActiveRequest extends Message<SetVersionActiveRequest> {
 
   static equals(a: SetVersionActiveRequest | PlainMessage<SetVersionActiveRequest> | undefined, b: SetVersionActiveRequest | PlainMessage<SetVersionActiveRequest> | undefined): boolean {
     return proto3.util.equals(SetVersionActiveRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message eval.v1.SetXMLModeRequest
+ */
+export class SetXMLModeRequest extends Message<SetXMLModeRequest> {
+  /**
+   * @generated from field: string workspace_id = 1;
+   */
+  workspaceId = "";
+
+  /**
+   * @generated from field: bool XMLMode = 2;
+   */
+  XMLMode = false;
+
+  constructor(data?: PartialMessage<SetXMLModeRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "eval.v1.SetXMLModeRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "workspace_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "XMLMode", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SetXMLModeRequest {
+    return new SetXMLModeRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SetXMLModeRequest {
+    return new SetXMLModeRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SetXMLModeRequest {
+    return new SetXMLModeRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SetXMLModeRequest | PlainMessage<SetXMLModeRequest> | undefined, b: SetXMLModeRequest | PlainMessage<SetXMLModeRequest> | undefined): boolean {
+    return proto3.util.equals(SetXMLModeRequest, a, b);
   }
 }
 

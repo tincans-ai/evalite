@@ -4,10 +4,10 @@ import {Tabs, TabsContent, TabsList, TabsTrigger} from "@/components/ui/tabs.tsx
 import PromptGenerator from "@/pages/PromptGenerator.tsx";
 import PromptTester from "@/pages/PromptTester.tsx";
 import ModelSettingsDialog from "@/components/ModelSettingsDialog.tsx";
-import {GetWorkspaceRequest, GetWorkspaceResponse, Workspace_Prompt} from "@/lib/gen/eval/v1/eval_pb.ts";
+import {GetWorkspaceRequest, GetWorkspaceResponse, Workspace_Prompt, SetXMLModeRequest} from "@/lib/gen/eval/v1/eval_pb.ts";
 import {useConnectClient} from "@/providers/ConnectProvider.tsx";
 import {Badge} from "@/components/ui/badge.tsx";
-import VersionSelectDialog from "@/components/VersionSelectDialog"; // Import the new component
+import VersionSelectDialog from "@/components/VersionSelectDialog";
 
 const WorkspacePage = () => {
     const {workspaceId} = useParams<{ workspaceId: string }>();
@@ -16,6 +16,7 @@ const WorkspacePage = () => {
     const [largeDefault, setLargeDefault] = useState<string>('');
     const [currentVersion, setCurrentVersion] = useState<Workspace_Prompt | undefined>(undefined);
     const [activeVersions, setActiveVersions] = useState<Workspace_Prompt[]>([]);
+    const [xmlMode, setXmlMode] = useState(false);
     const client = useConnectClient();
 
     useEffect(() => {
@@ -32,12 +33,19 @@ const WorkspacePage = () => {
             setCurrentVersion(res.workspace?.prompts.find((version) => version.versionNumber === versionNumber));
             const activeVersions = res.workspace?.prompts?.filter((version) => res.workspace?.activeVersionNumbers.includes(version.versionNumber)) || [];
             setActiveVersions(activeVersions);
+            setXmlMode(res.workspace.XMLMode);
         });
     }, [workspaceId])
 
     const handleVersionSelect = (version: Workspace_Prompt) => {
         setCurrentVersion(version);
     };
+
+    const handleSetXMLMode = (mode: boolean) => {
+        client.setXMLMode({workspaceId: workspaceId, XMLMode: mode} as SetXMLModeRequest).then(() => {
+            setXmlMode(mode);
+        });
+    }
 
     if (!workspaceId) {
         return <div>Error: Workspace ID not provided</div>;
@@ -57,6 +65,8 @@ const WorkspacePage = () => {
                         onVersionSelect={handleVersionSelect}
                         activeVersions={activeVersions}
                         onSetActiveVersions={setActiveVersions}
+                        xmlMode={xmlMode}
+                        setXmlMode={handleSetXMLMode}
                     />
                     <ModelSettingsDialog
                         smallDefault={smallDefault}
@@ -76,7 +86,7 @@ const WorkspacePage = () => {
                 </TabsContent>
                 <TabsContent value="tester">
                     <PromptTester workspaceId={workspaceId} workspace={workspace} version={currentVersion}
-                                  activeVersions={activeVersions}/>
+                                  activeVersions={activeVersions} xmlMode={xmlMode}/>
                 </TabsContent>
             </Tabs>
         </div>

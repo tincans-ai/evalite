@@ -9,6 +9,7 @@ import (
 	"github.com/rs/xid"
 	"github.com/stillmatic/gollum/packages/llm"
 	pb "github.com/tincans-ai/evalite/gen/eval/v1"
+	"github.com/tincans-ai/evalite/gen/eval/v1/evalv1connect"
 	"github.com/tincans-ai/evalite/packages/llmutils"
 	"github.com/tincans-ai/evalite/packages/logutil"
 	"github.com/tincans-ai/evalite/packages/providerstore"
@@ -233,3 +234,5 @@ func (s *Service) InferSync(ctx context.Context, req llm.InferRequest) (string, 
 	}
 	return provider.GenerateResponse(ctx, req)
 }
+
+var _ evalv1connect.EvaluationServiceHandler = (*Service)(nil)
