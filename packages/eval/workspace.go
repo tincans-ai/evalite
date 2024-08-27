@@ -273,7 +273,6 @@ func (s *Service) SetVersionActive(ctx context.Context, req *connect.Request[eva
 	}
 	if !req.Msg.Active {
 		//delete req.Msg.VersionNumber from workspace.active_version_numbers if it's in there
-
 		newActiveVersionNumbers := make([]uint32, 0)
 		for _, versionNumber := range workspace.ActiveVersionNumbers {
 			if versionNumber != req.Msg.VersionNumber {

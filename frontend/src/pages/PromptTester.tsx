@@ -19,7 +19,7 @@ import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow,} from "@/
 import {Button} from "@/components/ui/button";
 import {Textarea} from "@/components/ui/textarea";
 import {Input} from "@/components/ui/input";
-import WorkspaceSettingsDialog from "@/components/WorkspaceSettingsDialog";
+import ModelConfigDialog from "@/components/ModelConfigDialog.tsx";
 import {Badge} from "@/components/ui/badge.tsx";
 import XMLViewer from 'react-xml-viewer'
 import {Copy, PlayIcon, ThumbsDown, ThumbsUp} from "lucide-react";
@@ -406,7 +406,7 @@ const PromptTester: React.FC<PromptTesterProps> = ({
                 <Button onClick={handleGenerateTestCase}>Generate Test Case</Button>
                 <Button variant="outline">Import Test Cases</Button>
                 <Button variant="outline">Export to CSV</Button>
-                <WorkspaceSettingsDialog
+                <ModelConfigDialog
                     workspaceId={workspaceId}
                     onConfigsChange={setActiveConfigs}
                     configs={workspace?.workspace?.workspaceConfigs || []}

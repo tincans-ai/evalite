@@ -184,9 +184,12 @@ func (s *Service) Evaluate(ctx context.Context, req *connect.Request[pb.Evaluati
 	// create responses
 	protoResults := make([]*pb.TestResult, len(llmResps))
 	for i, llmResp := range llmResps {
+		if llmResp == "" {
+			continue
+		}
 		tr := TestResult{
 			ID:                  xid.New().String(),
-			TestCaseID:          req.Msg.TestCase.Id,
+			TestCaseID:          testCaseID,
 			Response:            llmResp,
 			PromptVersionNumber: prompt.VersionNumber,
 			ModelConfigName:     workspaceConfigs[i].ModelConfigName,
@@ -200,7 +203,7 @@ func (s *Service) Evaluate(ctx context.Context, req *connect.Request[pb.Evaluati
 		protoResults[i] = &pb.TestResult{
 			Id:              tr.ID,
 			Response:        llmResp,
-			TestCaseId:      req.Msg.TestCase.Id,
+			TestCaseId:      testCaseID,
 			ModelConfigName: workspaceConfigs[i].ModelConfigName,
 			MessageOptions: &pb.MessageOptions{
 				MaxTokens:   int32(workspaceConfigs[i].MessageOptions.MaxTokens),

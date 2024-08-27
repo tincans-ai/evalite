@@ -4,7 +4,13 @@ import {Tabs, TabsContent, TabsList, TabsTrigger} from "@/components/ui/tabs.tsx
 import PromptGenerator from "@/pages/PromptGenerator.tsx";
 import PromptTester from "@/pages/PromptTester.tsx";
 import ModelSettingsDialog from "@/components/ModelSettingsDialog.tsx";
-import {GetWorkspaceRequest, GetWorkspaceResponse, Workspace_Prompt, SetXMLModeRequest} from "@/lib/gen/eval/v1/eval_pb.ts";
+import {
+    GetWorkspaceRequest,
+    GetWorkspaceResponse,
+    SetVersionActiveRequest,
+    SetXMLModeRequest,
+    Workspace_Prompt
+} from "@/lib/gen/eval/v1/eval_pb.ts";
 import {useConnectClient} from "@/providers/ConnectProvider.tsx";
 import {Badge} from "@/components/ui/badge.tsx";
 import VersionSelectDialog from "@/components/VersionSelectDialog";
@@ -41,6 +47,19 @@ const WorkspacePage = () => {
         setCurrentVersion(version);
     };
 
+    const handleActiveVersions = async (versions: Workspace_Prompt[]) => {
+        console.log(versions)
+        for (const version of workspace?.workspace?.prompts || []) {
+            const req = {
+                workspaceId: workspaceId,
+                versionNumber: version.versionNumber,
+                active : versions.map(v => v.versionNumber).includes(version.versionNumber)
+            } as SetVersionActiveRequest;
+            await client.setVersionActive(req);
+        }
+        setActiveVersions(versions);
+    }
+
     const handleSetXMLMode = (mode: boolean) => {
         client.setXMLMode({workspaceId: workspaceId, XMLMode: mode} as SetXMLModeRequest).then(() => {
             setXmlMode(mode);
@@ -64,7 +83,7 @@ const WorkspacePage = () => {
                         currentVersion={currentVersion}
                         onVersionSelect={handleVersionSelect}
                         activeVersions={activeVersions}
-                        onSetActiveVersions={setActiveVersions}
+                        onSetActiveVersions={handleActiveVersions}
                         xmlMode={xmlMode}
                         setXmlMode={handleSetXMLMode}
                     />

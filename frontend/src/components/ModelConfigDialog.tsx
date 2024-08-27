@@ -23,13 +23,13 @@ import {
     WorkspaceConfig
 } from "@/lib/gen/eval/v1/eval_pb.ts";
 
-interface WorkspaceSettingsDialogProps {
+interface ModelConfigDialogProps {
     workspaceId: string;
     configs: WorkspaceConfig[] | [];
     onConfigsChange: (configs: WorkspaceConfig[]) => void;
 }
 
-const WorkspaceSettingsDialog: React.FC<WorkspaceSettingsDialogProps> = ({workspaceId, configs, onConfigsChange}) => {
+const ModelConfigDialog: React.FC<ModelConfigDialogProps> = ({workspaceId, configs, onConfigsChange}) => {
     const [localConfigs, setLocalConfigs] = useState<Omit<WorkspaceConfig, | 'createdAt' | 'updatedAt'>[]>(configs);
     const [newConfig, setNewConfig] = useState<Omit<WorkspaceConfig, 'id' | 'createdAt' | 'updatedAt'>>({
         name: '',
@@ -238,4 +238,4 @@ const WorkspaceSettingsDialog: React.FC<WorkspaceSettingsDialogProps> = ({worksp
     );
 };
 
-export default WorkspaceSettingsDialog;
+export default ModelConfigDialog;
