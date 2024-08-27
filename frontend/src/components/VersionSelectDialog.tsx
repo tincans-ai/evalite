@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useEffect} from 'react';
 import {Button} from "@/components/ui/button";
 import {
     Dialog,
@@ -34,6 +34,10 @@ const VersionSelectDialog: React.FC<VersionSelectDialogProps> = ({
                                                                  }) => {
     const [selectedVersion, setSelectedVersion] = React.useState<Workspace_Prompt | undefined>(currentVersion);
     const [selectedActiveVersions, setSelectedActiveVersions] = React.useState<Workspace_Prompt[]>(activeVersions);
+
+    useEffect(() => {
+        setSelectedActiveVersions(activeVersions);
+    }, [activeVersions]);
 
     const handleVersionChange = (value: string) => {
         const version = versions.find(v => v.versionNumber.toString() === value);

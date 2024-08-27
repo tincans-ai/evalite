@@ -38,6 +38,7 @@ const WorkspacePage = () => {
             const versionNumber = res.workspace.currentPromptVersionNumber || res.workspace.prompts?.length - 1 || 0;
             setCurrentVersion(res.workspace?.prompts.find((version) => version.versionNumber === versionNumber));
             const activeVersions = res.workspace?.prompts?.filter((version) => res.workspace?.activeVersionNumbers.includes(version.versionNumber)) || [];
+            console.log(activeVersions);
             setActiveVersions(activeVersions);
             setXmlMode(res.workspace.XMLMode);
         });
