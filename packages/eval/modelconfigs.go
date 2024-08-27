@@ -13,6 +13,7 @@ func (s *Service) ListModelConfigs(ctx context.Context, req *connect.Request[emp
 	modelConfigNames := s.models.GetConfigNames()
 
 	providers := s.providers.ListProviders()
+	// create a set of providers
 	providerMap := make(map[llm.ProviderType]bool)
 	for _, p := range providers {
 		providerMap[p] = true
@@ -25,6 +26,10 @@ func (s *Service) ListModelConfigs(ctx context.Context, req *connect.Request[emp
 		if _, ok := providerMap[mc.ProviderType]; !ok {
 			continue
 		}
+		if mc.ModelType != llm.ModelTypeLLM {
+			continue
+		}
+
 		pbModelConfigs[m] = &evalv1.ModelConfig{
 			ProviderType: string(mc.ProviderType),
 			ModelName:    mc.ModelName,
