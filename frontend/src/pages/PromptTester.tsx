@@ -24,6 +24,7 @@ import {Badge} from "@/components/ui/badge.tsx";
 import XMLViewer from 'react-xml-viewer'
 import {Copy, PlayIcon, ThumbsDown, ThumbsUp} from "lucide-react";
 import {cn} from "@/lib/utils.ts";
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select.tsx";
 
 interface PromptTesterProps {
     workspaceId: string;
@@ -153,27 +154,40 @@ const PromptTester: React.FC<PromptTesterProps> = ({
     const [variables, setVariables] = useState<Variable[]>([]);
     const [activeConfigs, setActiveConfigs] = useState<WorkspaceConfig[]>([]);
     const [expandedRowNumber, setExpandedRowNumber] = useState<number>(-1);
+    const [currentPage, setCurrentPage] = useState<number>(1);
+    const [itemsPerPage, setItemsPerPage] = useState<number>(10);
+    const [totalPages, setTotalPages] = useState<number>(1);
     const client = useConnectClient();
 
     useEffect(() => {
-        const fetchTestCases = async () => {
-            const req: ListTestCasesRequestWithoutMethods = {
-                workspaceId: workspaceId,
-                page: 1,
-                pageSize: 10,
-            };
-            try {
-                const response = await client.listTestCases(req);
-                setTestCases(response.testCases);
-                setTestResults(response.testResults);
-                console.log(response);
-            } catch (error) {
-                console.error("Error fetching test cases:", error);
-            }
-        };
-
         fetchTestCases();
-    }, [workspaceId, client]);
+    }, [workspaceId, client, currentPage, itemsPerPage]);
+
+    const fetchTestCases = async () => {
+        const req: ListTestCasesRequestWithoutMethods = {
+            workspaceId: workspaceId,
+            page: currentPage,
+            pageSize: itemsPerPage,
+        };
+        try {
+            const response = await client.listTestCases(req);
+            setTestCases(response.testCases);
+            setTestResults(response.testResults);
+            const totalPageCount = Math.ceil(response.totalCount / itemsPerPage);
+            setTotalPages(totalPageCount);
+        } catch (error) {
+            console.error("Error fetching test cases:", error);
+        }
+    };
+
+    const handlePageChange = (newPage: number) => {
+        setCurrentPage(newPage);
+    };
+
+    const handleItemsPerPageChange = (newItemsPerPage: number) => {
+        setItemsPerPage(newItemsPerPage);
+        setCurrentPage(1); // Reset to first page when changing items per page
+    };
 
     useEffect(() => {
         if (version?.variables) {
@@ -423,10 +437,42 @@ const PromptTester: React.FC<PromptTesterProps> = ({
                 </TableBody>
             </Table>
 
+            <div className="flex justify-between items-center mt-4">
+                <div className="flex items-center space-x-2">
+                    <span>Items per page:</span>
+                    <Select value={itemsPerPage.toString()}
+                            onValueChange={(value) => handleItemsPerPageChange(Number(value))}>
+                        <SelectTrigger className="w-[70px]">
+                            <SelectValue/>
+                        </SelectTrigger>
+                        <SelectContent>
+                            {[5, 10, 20, 50, 100].map((num) => (
+                                <SelectItem key={num} value={num.toString()}>{num}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+                <div className="flex items-center space-x-2">
+                    <Button
+                        onClick={() => handlePageChange(currentPage - 1)}
+                        disabled={currentPage === 1}
+                    >
+                        Previous
+                    </Button>
+                    <span>{`Page ${currentPage} of ${totalPages}`}</span>
+                    <Button
+                        onClick={() => handlePageChange(currentPage + 1)}
+                        disabled={currentPage === totalPages}
+                    >
+                        Next
+                    </Button>
+                </div>
+            </div>
+
             <div className="flex space-x-2">
                 <Button onClick={handleAddRow}>+ Add Row</Button>
                 <Button onClick={() => handleGenerateTestCase(1)}>Generate Test Case</Button>
-                <Button onClick={() => handleGenerateTestCase(2)}>Generate Test Cases</Button>
+                <Button onClick={() => handleGenerateTestCase(10)}>Generate 10 Test Cases</Button>
                 <Button variant="outline">Import Test Cases</Button>
                 <Button variant="outline">Export to CSV</Button>
                 <ModelConfigDialog

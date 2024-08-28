@@ -194,7 +194,9 @@ func (s *Service) GenerateTestCase(ctx context.Context, req *connect.Request[eva
 	}
 
 	exampleValuesSb := strings.Builder{}
-	nExamples := int(math.Min(float64(len(testCases)), 3))
+	// NB chua: this should probably be customizable / easier to configure.
+	// whatever, input tokens are cheap enough.
+	nExamples := int(math.Min(float64(len(testCases)), 100))
 	for i, tc := range testCases {
 		if i >= nExamples {
 			break

@@ -286,9 +286,19 @@ message RateTestResultRequest {
   int32 rating = 2;
 }
 
+// generate all results for a workspace and model config
+message SyntheticGenerationRequest {
+  string workspace_id = 1;
+  string model_config_name = 2;
+
+  uint32 version_number = 3;
+  uint32 system_prompt_version_number = 4;
+}
+
 // Extended EvaluationService
 service EvaluationService {
   rpc Evaluate(EvaluationRequest) returns (EvaluationResponse) {}
+  rpc SyntheticGeneration(SyntheticGenerationRequest) returns (EvaluationResponse) {}
 
   // Workspace operations
   rpc CreateWorkspace(CreateWorkspaceRequest) returns (CreateWorkspaceResponse) {}
