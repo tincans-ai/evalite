@@ -191,6 +191,7 @@ const PromptTester: React.FC<PromptTesterProps> = ({
                 workspaceId: workspaceId,
                 testCase: testCase,
                 versionNumber: versionNumber,
+                systemPromptVersionNumber: workspace?.workspace?.currentSystemPromptVersionNumber,
             };
             const response = await client.evaluate(req);
 

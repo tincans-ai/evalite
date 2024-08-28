@@ -53,6 +53,7 @@ message EvaluationRequest {
   string workspace_id = 1;
   TestCase test_case = 2;
   uint32 version_number = 3;
+  uint32 system_prompt_version_number = 4;
 }
 
 message EvaluationResponse {

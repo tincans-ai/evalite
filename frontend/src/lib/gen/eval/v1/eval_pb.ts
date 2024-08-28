@@ -342,6 +342,11 @@ export class EvaluationRequest extends Message<EvaluationRequest> {
    */
   versionNumber = 0;
 
+  /**
+   * @generated from field: uint32 system_prompt_version_number = 4;
+   */
+  systemPromptVersionNumber = 0;
+
   constructor(data?: PartialMessage<EvaluationRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -353,6 +358,7 @@ export class EvaluationRequest extends Message<EvaluationRequest> {
     { no: 1, name: "workspace_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "test_case", kind: "message", T: TestCase },
     { no: 3, name: "version_number", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 4, name: "system_prompt_version_number", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): EvaluationRequest {

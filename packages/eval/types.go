@@ -150,6 +150,24 @@ func (w *Workspace) PromptByVersion(version uint32) *Prompt {
 	return nil
 }
 
+func (w *Workspace) CurrentSystemPrompt() *SystemPrompt {
+	for _, p := range w.SystemPrompts {
+		if p.VersionNumber == w.CurrentSystemPromptVersionNumber {
+			return &p
+		}
+	}
+	return nil
+}
+
+func (w *Workspace) SystemPromptByVersion(version uint32) *SystemPrompt {
+	for _, p := range w.SystemPrompts {
+		if p.VersionNumber == version {
+			return &p
+		}
+	}
+	return nil
+}
+
 type TestResult struct {
 	ID                  string `gorm:"primarykey"`
 	TestCaseID          string `gorm:"index"`

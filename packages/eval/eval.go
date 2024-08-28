@@ -49,7 +49,7 @@ func (s *Service) Evaluate(ctx context.Context, req *connect.Request[pb.Evaluati
 
 	// Get the workspace and test case
 	var workspace Workspace
-	if err := s.db.Preload("Prompts").Preload("WorkspaceConfigs").First(&workspace, "id = ?", req.Msg.WorkspaceId).Error; err != nil {
+	if err := s.db.Preload("Prompts").Preload("WorkspaceConfigs").Preload("SystemPrompts").First(&workspace, "id = ?", req.Msg.WorkspaceId).Error; err != nil {
 		return nil, fmt.Errorf("workspace not found: %w", err)
 	}
 
@@ -140,6 +140,11 @@ func (s *Service) Evaluate(ctx context.Context, req *connect.Request[pb.Evaluati
 		}
 	}
 
+	systemPrompt := workspace.SystemPromptByVersion(req.Msg.SystemPromptVersionNumber)
+	if systemPrompt == nil {
+		return nil, fmt.Errorf("system prompt not found")
+	}
+
 	// create llm reqs
 	// TODO: for a given model, cache if there are more than 5 requests to that specific model
 	//shouldCache := len(workspaceConfigs) > 5
@@ -150,9 +155,14 @@ func (s *Service) Evaluate(ctx context.Context, req *connect.Request[pb.Evaluati
 		if !ok {
 			return nil, fmt.Errorf("model config %s not found", wc.ModelConfigName)
 		}
+		messages := make([]llm.InferMessage, 0)
+		if systemPrompt != nil {
+			messages = append(messages, llm.InferMessage{Content: systemPrompt.Content, Role: "system", ShouldCache: shouldCache})
+		}
+		messages = append(messages, llm.InferMessage{Content: promptStr, Role: "user", ShouldCache: shouldCache})
 		llmReqs[i] = llm.InferRequest{
 			ModelConfig: modelConfig,
-			Messages:    []llm.InferMessage{{Content: promptStr, Role: "user", ShouldCache: shouldCache}},
+			Messages:    messages,
 			MessageOptions: llm.MessageOptions{
 				MaxTokens:   int(wc.MessageOptions.MaxTokens),
 				Temperature: wc.MessageOptions.Temperature,
