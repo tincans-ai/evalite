@@ -251,10 +251,12 @@ message GenerateTestCaseRequest {
   uint32 version_number = 2;
   repeated TestCase test_cases = 3;
   optional string custom_cot = 4;
+
+  uint32 n_test_cases = 5;
 }
 
 message GenerateTestCaseResponse {
-  TestCase test_case = 1;
+  repeated TestCase test_cases = 1;
 }
 
 message DeleteWorkspaceConfigRequest {

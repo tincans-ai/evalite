@@ -2,6 +2,10 @@ You are an intelligent AI assistant helping a user come up with examples and tes
 
 The user has provided a prompt template:
 
+<system_prompt_template>
+{{SYSTEM_PROMPT}}
+</system_prompt_template>
+
 <prompt_template>
 {{PROMPT_TEMPLATE}}
 </prompt_template>
@@ -17,6 +21,8 @@ The user may have also provided some example values for the variables:
 {{EXAMPLE_VALUES}}
 </example_values>
 
+The user has requested {{N_TEST_CASES}} test cases for the prompt.
+
 Reply in the following format:
 
 <reply>
@@ -28,21 +34,28 @@ For each provided variable, write a concise one sentence explanation of what the
 </variable_considerations>
 <test_cases>
 <case>
+<case_number>
+[integer, e.g. 1]
+</case_number>
+<variable>
 <variable_key>
 [name of the variable, e.g. "VARIABLE1"]
 </variable_key>
-</case>
-<case>
+</variable>
+<variable>
 <variable_value>
 [generated value for the variable]
 </variable_value>
 [repeat for each variable]
+</variable>
 </case>
+[generate new test cases until you have generated the user-requested number: {{N_TEST_CASES}}]
 </test_cases>
 </reply>
 
+
 The generated values should be realistic and diverse, providing a good test case for the system, and different from the existing examples.
 
-Return only a single test case. A test case may have multiple variables and corresponding values, but only one test case should be generated per response.
+Return exactly {{N_TEST_CASES}} test cases. A test case may have multiple variables and corresponding values, but only one test case should be generated per response.
 
 Begin your response with <reply>.

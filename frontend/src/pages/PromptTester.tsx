@@ -263,21 +263,23 @@ const PromptTester: React.FC<PromptTesterProps> = ({
         );
     };
 
-    const handleGenerateTestCase = async () => {
+    const handleGenerateTestCase = async (numCases: number) => {
         const req: Partial<GenerateTestCaseRequest> = {
             versionNumber: version?.versionNumber,
             workspaceId: workspaceId,
+            nTestCases: numCases,
         };
         try {
             const response = await client.generateTestCase(req);
-            if (!response.testCase) {
+            if (!response.testCases) {
                 return;
             }
-            setTestCases([...testCases, response.testCase]);
+            setTestCases([...testCases, ...response.testCases]);
         } catch (error) {
             console.error("Error generating test cases:", error);
         }
     };
+
     const handleDeleteTestCase = async (testCaseId: string | undefined) => {
         if (!testCaseId) {
             return;
@@ -423,7 +425,8 @@ const PromptTester: React.FC<PromptTesterProps> = ({
 
             <div className="flex space-x-2">
                 <Button onClick={handleAddRow}>+ Add Row</Button>
-                <Button onClick={handleGenerateTestCase}>Generate Test Case</Button>
+                <Button onClick={() => handleGenerateTestCase(1)}>Generate Test Case</Button>
+                <Button onClick={() => handleGenerateTestCase(2)}>Generate Test Cases</Button>
                 <Button variant="outline">Import Test Cases</Button>
                 <Button variant="outline">Export to CSV</Button>
                 <ModelConfigDialog

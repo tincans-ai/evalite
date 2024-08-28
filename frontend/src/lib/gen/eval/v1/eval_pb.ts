@@ -1891,6 +1891,11 @@ export class GenerateTestCaseRequest extends Message<GenerateTestCaseRequest> {
    */
   customCot?: string;
 
+  /**
+   * @generated from field: uint32 n_test_cases = 5;
+   */
+  nTestCases = 0;
+
   constructor(data?: PartialMessage<GenerateTestCaseRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1903,6 +1908,7 @@ export class GenerateTestCaseRequest extends Message<GenerateTestCaseRequest> {
     { no: 2, name: "version_number", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 3, name: "test_cases", kind: "message", T: TestCase, repeated: true },
     { no: 4, name: "custom_cot", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 5, name: "n_test_cases", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GenerateTestCaseRequest {
@@ -1927,9 +1933,9 @@ export class GenerateTestCaseRequest extends Message<GenerateTestCaseRequest> {
  */
 export class GenerateTestCaseResponse extends Message<GenerateTestCaseResponse> {
   /**
-   * @generated from field: eval.v1.TestCase test_case = 1;
+   * @generated from field: repeated eval.v1.TestCase test_cases = 1;
    */
-  testCase?: TestCase;
+  testCases: TestCase[] = [];
 
   constructor(data?: PartialMessage<GenerateTestCaseResponse>) {
     super();
@@ -1939,7 +1945,7 @@ export class GenerateTestCaseResponse extends Message<GenerateTestCaseResponse> 
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "eval.v1.GenerateTestCaseResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "test_case", kind: "message", T: TestCase },
+    { no: 1, name: "test_cases", kind: "message", T: TestCase, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GenerateTestCaseResponse {
