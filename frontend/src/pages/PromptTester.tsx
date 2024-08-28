@@ -23,6 +23,7 @@ import ModelConfigDialog from "@/components/ModelConfigDialog.tsx";
 import {Badge} from "@/components/ui/badge.tsx";
 import XMLViewer from 'react-xml-viewer'
 import {Copy, PlayIcon, ThumbsDown, ThumbsUp} from "lucide-react";
+import {cn} from "@/lib/utils.ts";
 
 interface PromptTesterProps {
     workspaceId: string;
@@ -44,7 +45,7 @@ type ListTestCasesRequestWithoutMethods = Omit<
 
 type TestResultWithoutMethods = Omit<TestResult, "toJSON" | "toProtobuf" | "clone">;
 
-const EnhancedTableCell = ({matchingResult, xmlMode, versionNumber, onRunTest, handleRating}) => {
+const EnhancedTableCell = ({matchingResult, xmlMode, versionNumber, onRunTest, handleRating, expanded}) => {
     const handleCopy = () => {
         navigator.clipboard.writeText(matchingResult?.content).then(() => {
             // You can add a toast notification here if you want
@@ -75,22 +76,26 @@ const EnhancedTableCell = ({matchingResult, xmlMode, versionNumber, onRunTest, h
                 {/* Separator */}
                 <Button variant="ghost" size="icon" onClick={onThumbsUp} title="Thumbs Up"
                         disabled={matchingResult?.rating === 1}>
-                    <ThumbsUp className="h-4 w-4 text-gray-600" color={matchingResult?.rating === 1 ? "green" : "gray"}/>
+                    <ThumbsUp className="h-4 w-4 text-gray-600"
+                              color={matchingResult?.rating === 1 ? "green" : "gray"}/>
                 </Button>
                 <Button variant="ghost" size="icon" onClick={onThumbsDown} title="Thumbs Down"
                         disabled={matchingResult?.rating === -1}>
-                    <ThumbsDown className="h-4 w-4 text-gray-600" color={matchingResult?.rating === -1 ? "red" : "gray"}/>
+                    <ThumbsDown className="h-4 w-4 text-gray-600"
+                                color={matchingResult?.rating === -1 ? "red" : "gray"}/>
                 </Button>
             </div>
         );
     };
 
     const ContentRenderer = ({content, xmlMode}) => (
-        <div className="max-h-40 overflow-auto max-w-md text-wrap text-xs">
+        <div className={cn( expanded ? "h-[960px]" : "h-[120px]", "overflow-auto max-w-md text-wrap text-xs items-start",)}>
             {xmlMode ? (
                 <XMLViewer xml={content} collapsible/>
             ) : (
-                <pre className={"max-w-md text-wrap text-xs"}>{content}</pre>
+                <pre className={"flex max-w-md text-wrap text-xs items-start"}>
+                    {content}
+                </pre>
             )}
         </div>
     );
@@ -98,7 +103,7 @@ const EnhancedTableCell = ({matchingResult, xmlMode, versionNumber, onRunTest, h
     return (
         <TableCell className="relative">
             {matchingResult ? (
-                <>
+                <div>
                     <ContentRenderer
                         content={matchingResult.response}
                         xmlMode={xmlMode}
@@ -113,7 +118,7 @@ const EnhancedTableCell = ({matchingResult, xmlMode, versionNumber, onRunTest, h
                             onThumbsDown={onThumbsDown}
                         />
                     </div>
-                </>
+                </div>
             ) : (
                 <div className="flex flex-row justify-between items-center">
                     <Badge variant="outline">
@@ -126,7 +131,7 @@ const EnhancedTableCell = ({matchingResult, xmlMode, versionNumber, onRunTest, h
                             size="sm"
                             onClick={onRunTest}
                         >
-                            <PlayIcon className="mr-2 h-4 w-4" />
+                            <PlayIcon className="mr-2 h-4 w-4"/>
                             Run
                         </Button>
                     </div>
@@ -147,6 +152,7 @@ const PromptTester: React.FC<PromptTesterProps> = ({
     const [testResults, setTestResults] = useState<TestResultWithoutMethods[]>([]);
     const [variables, setVariables] = useState<Variable[]>([]);
     const [activeConfigs, setActiveConfigs] = useState<WorkspaceConfig[]>([]);
+    const [expandedRowNumber, setExpandedRowNumber] = useState<number>(-1);
     const client = useConnectClient();
 
     useEffect(() => {
@@ -179,6 +185,14 @@ const PromptTester: React.FC<PromptTesterProps> = ({
             );
         }
     }, [version]);
+
+    const handleExpandRow = (rowNumber: number) => {
+        if (expandedRowNumber === rowNumber) {
+            setExpandedRowNumber(-1);
+            return;
+        }
+        setExpandedRowNumber(rowNumber);
+    }
 
     const handleRunTest = async (
         testCase: TestCaseWithoutMethods,
@@ -361,7 +375,7 @@ const PromptTester: React.FC<PromptTesterProps> = ({
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {testCases.map((testCase) => (
+                    {testCases.map((testCase, index) => (
                         <TableRow key={testCase.id}>
                             {variables.map((variable) => (
                                 <TableCell key={variable.name}>
@@ -383,6 +397,7 @@ const PromptTester: React.FC<PromptTesterProps> = ({
                                                                   xmlMode={xmlMode}
                                                                   versionNumber={version.versionNumber}
                                                                   handleRating={handleRating}
+                                                                  expanded={expandedRowNumber === index}
                                         />;
 
                                     })}
@@ -395,6 +410,10 @@ const PromptTester: React.FC<PromptTesterProps> = ({
                                     onClick={() => handleDeleteTestCase(testCase?.id)}
                                 >
                                     Delete
+                                </Button>
+                                <Button variant={"outline"} size={"sm"}
+                                        onClick={() => handleExpandRow(index)}>
+                                    Expand
                                 </Button>
                             </TableCell>
                         </TableRow>
