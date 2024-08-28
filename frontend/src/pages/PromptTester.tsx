@@ -90,7 +90,7 @@ const EnhancedTableCell = ({matchingResult, xmlMode, versionNumber, onRunTest, h
             {xmlMode ? (
                 <XMLViewer xml={content} collapsible/>
             ) : (
-                <pre>{content}</pre>
+                <pre className={"max-w-md text-wrap text-xs"}>{content}</pre>
             )}
         </div>
     );

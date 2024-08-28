@@ -171,7 +171,7 @@ func (s *Service) Evaluate(ctx context.Context, req *connect.Request[pb.Evaluati
 			defer wg.Done()
 			llmResp, err := s.InferSync(ctx, llmReq)
 			if err != nil {
-				logger.Error("failed to infer", "err", err)
+				logger.Error("failed to infer", "err", err, "model_name", llmReq.ModelConfig.ModelName)
 				return
 			}
 			llmResps[i] = llmResp
