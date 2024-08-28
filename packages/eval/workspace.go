@@ -94,7 +94,7 @@ func variablesToProtobuf(variables datatypes.JSONSlice[Variable]) []*evalv1.Vari
 
 func (s *Service) GetWorkspace(ctx context.Context, req *connect.Request[evalv1.GetWorkspaceRequest]) (*connect.Response[evalv1.GetWorkspaceResponse], error) {
 	var workspace Workspace
-	result := s.db.Preload("Prompts").Preload("WorkspaceConfigs").First(&workspace, "id = ?", req.Msg.Id)
+	result := s.db.Preload("Prompts").Preload("WorkspaceConfigs").Preload("SystemPrompts").First(&workspace, "id = ?", req.Msg.Id)
 	if result.Error != nil {
 		return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("workspace not found: %v", result.Error))
 	}
@@ -122,18 +122,28 @@ func (s *Service) GetWorkspace(ctx context.Context, req *connect.Request[evalv1.
 		}
 	}
 
+	protoSystemPrompts := make([]*evalv1.Workspace_SystemPrompt, len(workspace.SystemPrompts))
+	for i, systemPrompt := range workspace.SystemPrompts {
+		protoSystemPrompts[i] = &evalv1.Workspace_SystemPrompt{
+			VersionNumber: systemPrompt.VersionNumber,
+			Content:       systemPrompt.Content,
+		}
+	}
+
 	res := connect.NewResponse(&evalv1.GetWorkspaceResponse{
 		Workspace: &evalv1.Workspace{
-			Id:                         workspace.ID,
-			Name:                       workspace.Name,
-			ModelConfigNames:           workspace.ModelConfigNames,
-			CreatedAt:                  timestamppb.New(workspace.CreatedAt),
-			UpdatedAt:                  timestamppb.New(workspace.UpdatedAt),
-			Prompts:                    protoPrompts,
-			CurrentPromptVersionNumber: workspace.CurrentPromptVersionNumber,
-			WorkspaceConfigs:           workspaceConfigs,
-			ActiveVersionNumbers:       workspace.ActiveVersionNumbers,
-			XMLMode:                    workspace.XMLMode,
+			Id:                               workspace.ID,
+			Name:                             workspace.Name,
+			ModelConfigNames:                 workspace.ModelConfigNames,
+			CreatedAt:                        timestamppb.New(workspace.CreatedAt),
+			UpdatedAt:                        timestamppb.New(workspace.UpdatedAt),
+			Prompts:                          protoPrompts,
+			CurrentPromptVersionNumber:       workspace.CurrentPromptVersionNumber,
+			WorkspaceConfigs:                 workspaceConfigs,
+			ActiveVersionNumbers:             workspace.ActiveVersionNumbers,
+			XMLMode:                          workspace.XMLMode,
+			SystemPrompts:                    protoSystemPrompts,
+			CurrentSystemPromptVersionNumber: workspace.CurrentSystemPromptVersionNumber,
 		},
 	})
 	res.Header().Set("Eval-Version", "v1")

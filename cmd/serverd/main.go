@@ -70,7 +70,11 @@ func main() {
 	}
 
 	// Migrate the schema
-	db.AutoMigrate(&eval.Workspace{}, &eval.Prompt{}, &eval.TestResult{}, &eval.TestCase{}, &eval.WorkspaceConfig{})
+	err = db.AutoMigrate(&eval.Workspace{}, &eval.Prompt{}, &eval.TestResult{},
+		&eval.TestCase{}, &eval.WorkspaceConfig{}, &eval.SystemPrompt{})
+	if err != nil {
+		panic("failed to migrate schema")
+	}
 
 	server := eval.NewService(db)
 	mux := http.NewServeMux()

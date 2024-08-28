@@ -48,16 +48,18 @@ const (
 )
 
 type Workspace struct {
-	ID                         string                      `gorm:"primarykey"`
-	Name                       string                      `gorm:"not null"`
-	ModelConfigNames           datatypes.JSONSlice[string] `gorm:"type:json"`
-	CreatedAt                  time.Time
-	UpdatedAt                  time.Time
-	Prompts                    []Prompt          `gorm:"foreignKey:WorkspaceID"`
-	WorkspaceConfigs           []WorkspaceConfig `gorm:"foreignKey:WorkspaceID"`
-	CurrentPromptVersionNumber uint32
-	ActiveVersionNumbers       datatypes.JSONSlice[uint32]
-	XMLMode                    bool
+	ID                               string                      `gorm:"primarykey"`
+	Name                             string                      `gorm:"not null"`
+	ModelConfigNames                 datatypes.JSONSlice[string] `gorm:"type:json"`
+	CreatedAt                        time.Time
+	UpdatedAt                        time.Time
+	Prompts                          []Prompt          `gorm:"foreignKey:WorkspaceID"`
+	WorkspaceConfigs                 []WorkspaceConfig `gorm:"foreignKey:WorkspaceID"`
+	CurrentPromptVersionNumber       uint32
+	ActiveVersionNumbers             datatypes.JSONSlice[uint32]
+	XMLMode                          bool
+	SystemPrompts                    []SystemPrompt `gorm:"foreignKey:WorkspaceID"`
+	CurrentSystemPromptVersionNumber uint32
 }
 
 type WorkspaceConfig struct {
@@ -96,6 +98,12 @@ type Prompt struct {
 	WorkspaceID   string `gorm:"index"`
 }
 
+type SystemPrompt struct {
+	VersionNumber uint32
+	Content       string
+	WorkspaceID   string `gorm:"index"`
+}
+
 func (w *Workspace) BeforeCreate(tx *gorm.DB) error {
 	w.CurrentPromptVersionNumber = 0
 	return nil
@@ -111,6 +119,16 @@ func (w *Workspace) CreatePrompt(content string, variables []Variable) Prompt {
 		CreatedAt:     time.Now(),
 	}
 	w.ActiveVersionNumbers = append(w.ActiveVersionNumbers, w.CurrentPromptVersionNumber)
+	return p
+}
+
+func (w *Workspace) CreateSystemPrompt(content string) SystemPrompt {
+	w.CurrentSystemPromptVersionNumber++
+	p := SystemPrompt{
+		WorkspaceID:   w.ID,
+		VersionNumber: w.CurrentSystemPromptVersionNumber,
+		Content:       content,
+	}
 	return p
 }
 

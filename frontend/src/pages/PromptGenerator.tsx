@@ -1,6 +1,11 @@
 import React, {useEffect, useState} from "react";
 import {useConnectClient} from "@/providers/ConnectProvider";
-import {GetWorkspaceResponse, Workspace_Prompt, UpdateWorkspaceRequest} from "@/lib/gen/eval/v1/eval_pb";
+import {
+    GetWorkspaceResponse,
+    Workspace_Prompt,
+    UpdateWorkspaceRequest,
+    Workspace_SystemPrompt
+} from "@/lib/gen/eval/v1/eval_pb";
 import {Textarea} from "@/components/ui/textarea";
 import {Button} from "@/components/ui/button";
 import {Alert, AlertDescription, AlertTitle} from "@/components/ui/alert"
@@ -11,10 +16,12 @@ interface PromptGeneratorProps {
     workspaceId: string;
     workspace: GetWorkspaceResponse | undefined;
     version: Workspace_Prompt | undefined;
+    systemPrompt: Workspace_SystemPrompt| undefined;
 }
 
-const PromptGenerator: React.FC<PromptGeneratorProps> = ({workspaceId, version}) => {
+const PromptGenerator: React.FC<PromptGeneratorProps> = ({workspaceId, version, systemPrompt}) => {
     const [prompt, setPrompt] = useState('');
+    const [systemPromptValue, setSystemPromptValue] = useState('');
     const [pending, setPending] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const client = useConnectClient();
@@ -22,6 +29,7 @@ const PromptGenerator: React.FC<PromptGeneratorProps> = ({workspaceId, version})
 
     useEffect(() => {
         setPrompt(version?.content || '');
+        setSystemPromptValue(systemPrompt?.content || '');
     }, [version]);
 
 
@@ -29,7 +37,9 @@ const PromptGenerator: React.FC<PromptGeneratorProps> = ({workspaceId, version})
         const req: Partial<UpdateWorkspaceRequest> = {
             workspaceId: workspaceId,
             newContent: prompt,
+            newSystemPrompt: systemPromptValue,
         };
+        console.log(req);
         setPending(true);
         setError(null)
         client.updateWorkspace(req).then(() => {
@@ -42,13 +52,21 @@ const PromptGenerator: React.FC<PromptGeneratorProps> = ({workspaceId, version})
     };
 
     return (
-        <div className="p">
+        <div>
+            <Textarea
+                placeholder="Optional system prompt..."
+                value={systemPromptValue}
+                onChange={(e) => setSystemPromptValue(e.target.value)}
+                className="w-full mb-4 font-serif"
+                rows={20}
+                disabled={pending}
+            />
             <Textarea
                 placeholder="Describe your task here..."
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 className="w-full mb-4 font-serif"
-                rows={40}
+                rows={20}
                 disabled={pending}
             />
             <div className="flex flex-row justify-between items-center mb-2">
@@ -58,7 +76,7 @@ const PromptGenerator: React.FC<PromptGeneratorProps> = ({workspaceId, version})
             </div>
             {error && <Alert variant="destructive" className={"mt-2"}>
                 <AlertCircle className="h-4 w-4"/>
-                <AlertTitle>Error generating prompt</AlertTitle>
+                <AlertTitle>Error saving prompt</AlertTitle>
                 <AlertDescription>
                     {error}
                 </AlertDescription>

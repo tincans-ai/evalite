@@ -102,7 +102,15 @@ message Workspace {
   repeated WorkspaceConfig workspace_configs = 8;
   repeated uint32 active_version_numbers = 9;
 
-  bool XMLMode = 10;
+  message SystemPrompt {
+    uint32 version_number = 1;
+    string content = 2;
+  }
+
+  repeated SystemPrompt system_prompts = 10;
+  uint32 current_system_prompt_version_number = 11;
+
+  bool XMLMode = 12;
 }
 
 message TestCase {
@@ -226,12 +234,14 @@ message GetModelConfigResponse {
 message UpdateWorkspaceRequest {
   string workspace_id = 1;
   string new_content = 2;
-  optional string new_title = 3;
+  string new_system_prompt = 3;
+  optional string new_title = 4;
 }
 
 message UpdateWorkspaceResponse {
   uint32 new_version_number = 1;
   string content = 2;
+  string system_prompt = 3;
   google.protobuf.Timestamp updated_at = 4;
 }
 
