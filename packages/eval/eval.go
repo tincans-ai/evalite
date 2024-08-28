@@ -141,9 +141,6 @@ func (s *Service) Evaluate(ctx context.Context, req *connect.Request[pb.Evaluati
 	}
 
 	systemPrompt := workspace.SystemPromptByVersion(req.Msg.SystemPromptVersionNumber)
-	if systemPrompt == nil {
-		return nil, fmt.Errorf("system prompt not found")
-	}
 
 	// create llm reqs
 	// TODO: for a given model, cache if there are more than 5 requests to that specific model
