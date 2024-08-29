@@ -6,6 +6,7 @@ import (
 	"github.com/stillmatic/gollum/packages/llm/providers/anthropic"
 	"github.com/stillmatic/gollum/packages/llm/providers/google"
 	"github.com/stillmatic/gollum/packages/llm/providers/openai"
+	"github.com/stillmatic/gollum/packages/llm/providers/vertex"
 	"os"
 )
 
@@ -59,6 +60,15 @@ func NewProviderStore() *ProviderStore {
 		p.AddProvider(llm.ProviderGroq, openai.NewGroqProvider(groqAPIKey))
 	}
 
+	vertexRegion := os.Getenv("VERTEX_REGION")
+	vertexProjectID := os.Getenv("VERTEX_PROJECT_ID")
+	if vertexRegion != "" && vertexProjectID != "" {
+		vertexProvider, err := vertex.NewVertexAIProvider(context.Background(), vertexProjectID, vertexRegion)
+		if err != nil {
+			panic(err)
+		}
+		p.AddProvider(llm.ProviderVertex, vertexProvider)
+	}
 	// TODO:add the other providers here
 
 	return p

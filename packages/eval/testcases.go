@@ -218,10 +218,13 @@ func (s *Service) GenerateTestCase(ctx context.Context, req *connect.Request[eva
 
 	vars := map[string]string{
 		"PROMPT_TEMPLATE": promptVersion.Content,
-		"SYSTEM_PROMPT":   workspace.CurrentSystemPrompt().Content,
 		"VARIABLES":       variableSb.String(),
 		"EXAMPLE_VALUES":  exampleValuesSb.String(),
 		"N_TEST_CASES":    fmt.Sprintf("%v", req.Msg.NTestCases),
+	}
+	sysPrompt := workspace.CurrentSystemPrompt()
+	if sysPrompt != nil {
+		vars["SYSTEM_PROMPT"] = sysPrompt.Content
 	}
 	llmPrompt := llmutils.ReplacePromptVariables(generateTestCasePrompt, vars)
 
