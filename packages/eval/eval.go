@@ -13,6 +13,7 @@ import (
 	"github.com/tincans-ai/evalite/packages/llmutils"
 	"github.com/tincans-ai/evalite/packages/logutil"
 	"github.com/tincans-ai/evalite/packages/providerstore"
+	"golang.org/x/sync/semaphore"
 	"gorm.io/gorm"
 	"sync"
 )
@@ -229,8 +230,148 @@ func (s *Service) Evaluate(ctx context.Context, req *connect.Request[pb.Evaluati
 	return res, nil
 }
 
-func (s *Service) SyntheticGeneration(context.Context, *connect.Request[pb.SyntheticGenerationRequest]) (*connect.Response[pb.EvaluationResponse], error) {
-	panic("implement me")
+func (s *Service) SyntheticGeneration(ctx context.Context, req *connect.Request[pb.SyntheticGenerationRequest]) (*connect.Response[pb.EvaluationResponse], error) {
+	logger := logutil.LoggerFromContext(ctx)
+	logger.Debug("synthetic generation request", "req", req.Msg)
+
+	var workspace Workspace
+	if err := s.db.Preload("Prompts").Preload("WorkspaceConfigs").Preload("SystemPrompts").First(&workspace, "id = ?", req.Msg.WorkspaceId).Error; err != nil {
+		return nil, fmt.Errorf("workspace not found: %w", err)
+	}
+
+	// Get all test cases for the workspace
+	var testCases []TestCase
+	if err := s.db.Where("workspace_id = ?", workspace.ID).Find(&testCases).Error; err != nil {
+		return nil, fmt.Errorf("failed to fetch test cases: %w", err)
+	}
+
+	// Get the active workspace config (assuming only one is active for synthetic generation)
+	var activeConfig WorkspaceConfig
+	for _, wc := range workspace.WorkspaceConfigs {
+		if wc.Active {
+			activeConfig = wc
+			break
+		}
+	}
+	if activeConfig.ID == "" {
+		return nil, fmt.Errorf("no active workspace config found")
+	}
+
+	modelConfig, ok := s.models.GetConfig(activeConfig.ModelConfigName)
+	if !ok {
+		return nil, fmt.Errorf("model config %s not found", activeConfig.ModelConfigName)
+	}
+
+	prompt := workspace.PromptByVersion(req.Msg.VersionNumber)
+	systemPrompt := workspace.SystemPromptByVersion(req.Msg.SystemPromptVersionNumber)
+
+	// Prepare base messages (system prompt + user prompt)
+	baseMessages := make([]llm.InferMessage, 0)
+	if systemPrompt != nil {
+		shouldCache := len(testCases) > 5
+		baseMessages = append(baseMessages, llm.InferMessage{Content: systemPrompt.Content, Role: "system", ShouldCache: shouldCache})
+	}
+
+	var wg sync.WaitGroup
+	sem := semaphore.NewWeighted(2) // Limit to 2 concurrent processes
+	resultsChan := make(chan *pb.TestResult, len(testCases))
+
+	for _, testCase := range testCases {
+		wg.Add(1)
+		go func(tc TestCase) {
+			defer wg.Done()
+
+			if err := sem.Acquire(ctx, 1); err != nil {
+				logger.Error("failed to acquire semaphore", "err", err)
+				return
+			}
+			defer sem.Release(1)
+
+			result, err := s.processSingleTestCase(ctx, tc, prompt, baseMessages, activeConfig, modelConfig)
+			if err != nil {
+				logger.Error("failed to process test case", "err", err, "test_case_id", tc.ID)
+				return
+			}
+
+			resultsChan <- result
+		}(testCase)
+	}
+
+	wg.Wait()
+	close(resultsChan)
+
+	var protoResults []*pb.TestResult
+	for result := range resultsChan {
+		protoResults = append(protoResults, result)
+	}
+
+	res := connect.NewResponse(&pb.EvaluationResponse{
+		Result: protoResults,
+	})
+
+	res.Header().Set("Synthetic-Gen-Version", "v1")
+	return res, nil
+}
+
+func (s *Service) processSingleTestCase(ctx context.Context, testCase TestCase, prompt *Prompt, baseMessages []llm.InferMessage, activeConfig WorkspaceConfig, modelConfig llm.ModelConfig) (*pb.TestResult, error) {
+	// Replace variables in the prompt
+	vars := make(map[string]string)
+	for k, v := range testCase.VariableValues {
+		if v.TextValue != nil {
+			vars[k] = *v.TextValue
+		}
+		// TODO: Handle image values if needed
+	}
+	promptStr := llmutils.ReplacePromptVariables(prompt.Content, vars)
+
+	// Create LLM request
+	messages := append(baseMessages, llm.InferMessage{Content: promptStr, Role: "user", ShouldCache: true})
+	llmReq := llm.InferRequest{
+		ModelConfig: modelConfig,
+		Messages:    messages,
+		MessageOptions: llm.MessageOptions{
+			MaxTokens:   int(activeConfig.MessageOptions.MaxTokens),
+			Temperature: activeConfig.MessageOptions.Temperature,
+		},
+	}
+
+	// Send LLM request
+	llmResp, err := s.InferSync(ctx, llmReq)
+	if err != nil {
+		return nil, fmt.Errorf("failed to infer: %w", err)
+	}
+
+	// Save the result
+	tr := TestResult{
+		ID:                  xid.New().String(),
+		TestCaseID:          testCase.ID,
+		Response:            llmResp,
+		PromptVersionNumber: prompt.VersionNumber,
+		ModelConfigName:     activeConfig.ModelConfigName,
+		MessageOptions:      activeConfig.MessageOptions,
+		WorkspaceConfigID:   activeConfig.ID,
+	}
+	if err := s.db.Create(&tr).Error; err != nil {
+		return nil, fmt.Errorf("failed to save test result: %w", err)
+	}
+
+	testCase.HasBeenEvaluated = true
+	if err := s.db.Save(&testCase).Error; err != nil {
+		return nil, fmt.Errorf("failed to save test case: %w", err)
+	}
+
+	return &pb.TestResult{
+		Id:              tr.ID,
+		Response:        llmResp,
+		TestCaseId:      testCase.ID,
+		ModelConfigName: activeConfig.ModelConfigName,
+		MessageOptions: &pb.MessageOptions{
+			MaxTokens:   int32(activeConfig.MessageOptions.MaxTokens),
+			Temperature: activeConfig.MessageOptions.Temperature,
+		},
+		PromptVersionNumber: prompt.VersionNumber,
+		WorkspaceConfigId:   activeConfig.ID,
+	}, nil
 }
 
 func (s *Service) Infer(ctx context.Context, req llm.InferRequest) (<-chan llm.StreamDelta, error) {

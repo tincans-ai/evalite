@@ -48,7 +48,7 @@ type TestResultWithoutMethods = Omit<TestResult, "toJSON" | "toProtobuf" | "clon
 
 const EnhancedTableCell = ({matchingResult, xmlMode, versionNumber, onRunTest, handleRating, expanded}) => {
     const handleCopy = () => {
-        navigator.clipboard.writeText(matchingResult?.content).then(() => {
+        navigator.clipboard.writeText(matchingResult?.response.replace(/\\n/g, '\n')).then(() => {
             // You can add a toast notification here if you want
             console.log('Copied to clipboard');
         });
@@ -90,12 +90,14 @@ const EnhancedTableCell = ({matchingResult, xmlMode, versionNumber, onRunTest, h
     };
 
     const ContentRenderer = ({content, xmlMode}) => (
-        <div className={cn( expanded ? "h-[960px]" : "h-[120px]", "overflow-auto max-w-md text-wrap text-xs items-start",)}>
+
+        <div
+            className={cn(expanded ? "h-[960px]" : "h-[120px]", "overflow-auto max-w-md text-wrap text-xs items-start",)}>
             {xmlMode ? (
-                <XMLViewer xml={content} collapsible/>
+                <XMLViewer xml={content.replace(/\\n/g, '\n')} collapsible/>
             ) : (
                 <pre className={"flex max-w-md text-wrap text-xs items-start"}>
-                    {content}
+                    {content.replace(/\\n/g, '\n')}
                 </pre>
             )}
         </div>
@@ -276,6 +278,44 @@ const PromptTester: React.FC<PromptTesterProps> = ({
                     : tc,
             ),
         );
+    };
+
+    const handleSyntheticGenerate = async () => {
+        const req = {
+            workspaceId: workspaceId,
+            modelConfigName: activeConfigs[0].name,
+            versionNumber: version?.versionNumber,
+            systemPromptVersionNumber: workspace?.workspace?.currentSystemPromptVersionNumber,
+        };
+        try {
+            const response = await client.syntheticGeneration(req);
+            console.log(response);
+
+            // Update test results
+            setTestResults((prevTestResults) => [
+                ...prevTestResults,
+                ...response.result,
+            ]);
+
+            // Update test cases
+            setTestCases((prevTestCases) => {
+                const updatedTestCases = [...prevTestCases];
+                response.result.forEach((result) => {
+                    const index = updatedTestCases.findIndex((tc) => tc.id === result.testCaseId);
+                    if (index !== -1) {
+                        updatedTestCases[index] = {
+                            ...updatedTestCases[index],
+                            hasBeenEvaluated: true,
+                            // Add any other properties you want to update
+                        };
+                    }
+                });
+                return updatedTestCases;
+            });
+
+        } catch (error) {
+            console.error("Error generating synthetic test cases:", error);
+        }
     };
 
     const handleGenerateTestCase = async (numCases: number) => {
@@ -477,8 +517,9 @@ const PromptTester: React.FC<PromptTesterProps> = ({
                 <Button onClick={handleAddRow}>+ Add Row</Button>
                 <Button onClick={() => handleGenerateTestCase(1)}>Generate Test Case</Button>
                 <Button onClick={() => handleGenerateTestCase(10)}>Generate 10 Test Cases</Button>
-                <Button variant="outline">Import Test Cases</Button>
-                <Button variant="outline">Export to CSV</Button>
+                <Button onClick={handleSyntheticGenerate}>Synthetic Generate</Button>
+                {/*<Button variant="outline">Import Test Cases</Button>*/}
+                {/*<Button variant="outline">Export to CSV</Button>*/}
                 <ModelConfigDialog
                     workspaceId={workspaceId}
                     onConfigsChange={setActiveConfigs}
@@ -487,7 +528,7 @@ const PromptTester: React.FC<PromptTesterProps> = ({
             </div>
             <div>
                 <Textarea value={seedPrompt} onChange={(e) => setSeedPrompt(e.target.value)}
-                            placeholder="Test case generation seed prompt"/>
+                          placeholder="Test case generation seed prompt"/>
             </div>
         </div>
     );
