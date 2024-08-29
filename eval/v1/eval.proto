@@ -253,6 +253,7 @@ message GenerateTestCaseRequest {
   optional string custom_cot = 4;
 
   uint32 n_test_cases = 5;
+  optional string seed_prompt = 6;
 }
 
 message GenerateTestCaseResponse {

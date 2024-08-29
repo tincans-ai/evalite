@@ -157,6 +157,7 @@ const PromptTester: React.FC<PromptTesterProps> = ({
     const [currentPage, setCurrentPage] = useState<number>(1);
     const [itemsPerPage, setItemsPerPage] = useState<number>(10);
     const [totalPages, setTotalPages] = useState<number>(1);
+    const [seedPrompt, setSeedPrompt] = useState<string>('');
     const client = useConnectClient();
 
     useEffect(() => {
@@ -283,6 +284,9 @@ const PromptTester: React.FC<PromptTesterProps> = ({
             workspaceId: workspaceId,
             nTestCases: numCases,
         };
+        if (seedPrompt && seedPrompt.length > 0) {
+            req.seedPrompt = seedPrompt;
+        }
         try {
             const response = await client.generateTestCase(req);
             if (!response.testCases) {
@@ -480,6 +484,10 @@ const PromptTester: React.FC<PromptTesterProps> = ({
                     onConfigsChange={setActiveConfigs}
                     configs={workspace?.workspace?.workspaceConfigs || []}
                 />
+            </div>
+            <div>
+                <Textarea value={seedPrompt} onChange={(e) => setSeedPrompt(e.target.value)}
+                            placeholder="Test case generation seed prompt"/>
             </div>
         </div>
     );

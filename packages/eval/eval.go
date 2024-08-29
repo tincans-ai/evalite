@@ -229,6 +229,10 @@ func (s *Service) Evaluate(ctx context.Context, req *connect.Request[pb.Evaluati
 	return res, nil
 }
 
+func (s *Service) SyntheticGeneration(context.Context, *connect.Request[pb.SyntheticGenerationRequest]) (*connect.Response[pb.EvaluationResponse], error) {
+	panic("implement me")
+}
+
 func (s *Service) Infer(ctx context.Context, req llm.InferRequest) (<-chan llm.StreamDelta, error) {
 	provider := s.providers.GetProvider(req.ModelConfig.ProviderType)
 	if provider == nil {

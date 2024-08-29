@@ -23,6 +23,8 @@ The user may have also provided some example values for the variables:
 
 The user has requested {{N_TEST_CASES}} test cases for the prompt.
 
+
+
 Reply in the following format:
 
 <reply>
@@ -52,7 +54,6 @@ For each provided variable, write a concise one sentence explanation of what the
 [generate new test cases until you have generated the user-requested number: {{N_TEST_CASES}}]
 </test_cases>
 </reply>
-
 
 The generated values should be realistic and diverse, providing a good test case for the system, and different from the existing examples.
 

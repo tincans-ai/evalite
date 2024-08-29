@@ -37,6 +37,9 @@ const (
 	// EvaluationServiceEvaluateProcedure is the fully-qualified name of the EvaluationService's
 	// Evaluate RPC.
 	EvaluationServiceEvaluateProcedure = "/eval.v1.EvaluationService/Evaluate"
+	// EvaluationServiceSyntheticGenerationProcedure is the fully-qualified name of the
+	// EvaluationService's SyntheticGeneration RPC.
+	EvaluationServiceSyntheticGenerationProcedure = "/eval.v1.EvaluationService/SyntheticGeneration"
 	// EvaluationServiceCreateWorkspaceProcedure is the fully-qualified name of the EvaluationService's
 	// CreateWorkspace RPC.
 	EvaluationServiceCreateWorkspaceProcedure = "/eval.v1.EvaluationService/CreateWorkspace"
@@ -103,6 +106,7 @@ const (
 var (
 	evaluationServiceServiceDescriptor                          = v1.File_eval_v1_eval_proto.Services().ByName("EvaluationService")
 	evaluationServiceEvaluateMethodDescriptor                   = evaluationServiceServiceDescriptor.Methods().ByName("Evaluate")
+	evaluationServiceSyntheticGenerationMethodDescriptor        = evaluationServiceServiceDescriptor.Methods().ByName("SyntheticGeneration")
 	evaluationServiceCreateWorkspaceMethodDescriptor            = evaluationServiceServiceDescriptor.Methods().ByName("CreateWorkspace")
 	evaluationServiceGetWorkspaceMethodDescriptor               = evaluationServiceServiceDescriptor.Methods().ByName("GetWorkspace")
 	evaluationServiceListWorkspacesMethodDescriptor             = evaluationServiceServiceDescriptor.Methods().ByName("ListWorkspaces")
@@ -128,6 +132,7 @@ var (
 // EvaluationServiceClient is a client for the eval.v1.EvaluationService service.
 type EvaluationServiceClient interface {
 	Evaluate(context.Context, *connect.Request[v1.EvaluationRequest]) (*connect.Response[v1.EvaluationResponse], error)
+	SyntheticGeneration(context.Context, *connect.Request[v1.SyntheticGenerationRequest]) (*connect.Response[v1.EvaluationResponse], error)
 	// Workspace operations
 	CreateWorkspace(context.Context, *connect.Request[v1.CreateWorkspaceRequest]) (*connect.Response[v1.CreateWorkspaceResponse], error)
 	GetWorkspace(context.Context, *connect.Request[v1.GetWorkspaceRequest]) (*connect.Response[v1.GetWorkspaceResponse], error)
@@ -168,6 +173,12 @@ func NewEvaluationServiceClient(httpClient connect.HTTPClient, baseURL string, o
 			httpClient,
 			baseURL+EvaluationServiceEvaluateProcedure,
 			connect.WithSchema(evaluationServiceEvaluateMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
+		syntheticGeneration: connect.NewClient[v1.SyntheticGenerationRequest, v1.EvaluationResponse](
+			httpClient,
+			baseURL+EvaluationServiceSyntheticGenerationProcedure,
+			connect.WithSchema(evaluationServiceSyntheticGenerationMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
 		createWorkspace: connect.NewClient[v1.CreateWorkspaceRequest, v1.CreateWorkspaceResponse](
@@ -296,6 +307,7 @@ func NewEvaluationServiceClient(httpClient connect.HTTPClient, baseURL string, o
 // evaluationServiceClient implements EvaluationServiceClient.
 type evaluationServiceClient struct {
 	evaluate                   *connect.Client[v1.EvaluationRequest, v1.EvaluationResponse]
+	syntheticGeneration        *connect.Client[v1.SyntheticGenerationRequest, v1.EvaluationResponse]
 	createWorkspace            *connect.Client[v1.CreateWorkspaceRequest, v1.CreateWorkspaceResponse]
 	getWorkspace               *connect.Client[v1.GetWorkspaceRequest, v1.GetWorkspaceResponse]
 	listWorkspaces             *connect.Client[v1.ListWorkspacesRequest, v1.ListWorkspacesResponse]
@@ -321,6 +333,11 @@ type evaluationServiceClient struct {
 // Evaluate calls eval.v1.EvaluationService.Evaluate.
 func (c *evaluationServiceClient) Evaluate(ctx context.Context, req *connect.Request[v1.EvaluationRequest]) (*connect.Response[v1.EvaluationResponse], error) {
 	return c.evaluate.CallUnary(ctx, req)
+}
+
+// SyntheticGeneration calls eval.v1.EvaluationService.SyntheticGeneration.
+func (c *evaluationServiceClient) SyntheticGeneration(ctx context.Context, req *connect.Request[v1.SyntheticGenerationRequest]) (*connect.Response[v1.EvaluationResponse], error) {
+	return c.syntheticGeneration.CallUnary(ctx, req)
 }
 
 // CreateWorkspace calls eval.v1.EvaluationService.CreateWorkspace.
@@ -426,6 +443,7 @@ func (c *evaluationServiceClient) RateTestResult(ctx context.Context, req *conne
 // EvaluationServiceHandler is an implementation of the eval.v1.EvaluationService service.
 type EvaluationServiceHandler interface {
 	Evaluate(context.Context, *connect.Request[v1.EvaluationRequest]) (*connect.Response[v1.EvaluationResponse], error)
+	SyntheticGeneration(context.Context, *connect.Request[v1.SyntheticGenerationRequest]) (*connect.Response[v1.EvaluationResponse], error)
 	// Workspace operations
 	CreateWorkspace(context.Context, *connect.Request[v1.CreateWorkspaceRequest]) (*connect.Response[v1.CreateWorkspaceResponse], error)
 	GetWorkspace(context.Context, *connect.Request[v1.GetWorkspaceRequest]) (*connect.Response[v1.GetWorkspaceResponse], error)
@@ -462,6 +480,12 @@ func NewEvaluationServiceHandler(svc EvaluationServiceHandler, opts ...connect.H
 		EvaluationServiceEvaluateProcedure,
 		svc.Evaluate,
 		connect.WithSchema(evaluationServiceEvaluateMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
+	evaluationServiceSyntheticGenerationHandler := connect.NewUnaryHandler(
+		EvaluationServiceSyntheticGenerationProcedure,
+		svc.SyntheticGeneration,
+		connect.WithSchema(evaluationServiceSyntheticGenerationMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
 	evaluationServiceCreateWorkspaceHandler := connect.NewUnaryHandler(
@@ -588,6 +612,8 @@ func NewEvaluationServiceHandler(svc EvaluationServiceHandler, opts ...connect.H
 		switch r.URL.Path {
 		case EvaluationServiceEvaluateProcedure:
 			evaluationServiceEvaluateHandler.ServeHTTP(w, r)
+		case EvaluationServiceSyntheticGenerationProcedure:
+			evaluationServiceSyntheticGenerationHandler.ServeHTTP(w, r)
 		case EvaluationServiceCreateWorkspaceProcedure:
 			evaluationServiceCreateWorkspaceHandler.ServeHTTP(w, r)
 		case EvaluationServiceGetWorkspaceProcedure:
@@ -639,6 +665,10 @@ type UnimplementedEvaluationServiceHandler struct{}
 
 func (UnimplementedEvaluationServiceHandler) Evaluate(context.Context, *connect.Request[v1.EvaluationRequest]) (*connect.Response[v1.EvaluationResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("eval.v1.EvaluationService.Evaluate is not implemented"))
+}
+
+func (UnimplementedEvaluationServiceHandler) SyntheticGeneration(context.Context, *connect.Request[v1.SyntheticGenerationRequest]) (*connect.Response[v1.EvaluationResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("eval.v1.EvaluationService.SyntheticGeneration is not implemented"))
 }
 
 func (UnimplementedEvaluationServiceHandler) CreateWorkspace(context.Context, *connect.Request[v1.CreateWorkspaceRequest]) (*connect.Response[v1.CreateWorkspaceResponse], error) {

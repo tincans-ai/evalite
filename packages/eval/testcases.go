@@ -225,6 +225,11 @@ func (s *Service) GenerateTestCase(ctx context.Context, req *connect.Request[eva
 	}
 	llmPrompt := llmutils.ReplacePromptVariables(generateTestCasePrompt, vars)
 
+	// add optional seed prompt
+	if req.Msg.SeedPrompt != nil && *req.Msg.SeedPrompt != "" {
+		llmPrompt += "\n\n" + "The user requests that your new examples be inspired by the following seed phrases: \n" + *req.Msg.SeedPrompt
+	}
+
 	logger.Debug("inferring prompt", "prompt", llmPrompt, "vars", vars)
 
 	msgs := []llm.InferMessage{

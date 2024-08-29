@@ -1896,6 +1896,11 @@ export class GenerateTestCaseRequest extends Message<GenerateTestCaseRequest> {
    */
   nTestCases = 0;
 
+  /**
+   * @generated from field: optional string seed_prompt = 6;
+   */
+  seedPrompt?: string;
+
   constructor(data?: PartialMessage<GenerateTestCaseRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1909,6 +1914,7 @@ export class GenerateTestCaseRequest extends Message<GenerateTestCaseRequest> {
     { no: 3, name: "test_cases", kind: "message", T: TestCase, repeated: true },
     { no: 4, name: "custom_cot", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 5, name: "n_test_cases", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 6, name: "seed_prompt", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GenerateTestCaseRequest {
@@ -2189,6 +2195,63 @@ export class RateTestResultRequest extends Message<RateTestResultRequest> {
 
   static equals(a: RateTestResultRequest | PlainMessage<RateTestResultRequest> | undefined, b: RateTestResultRequest | PlainMessage<RateTestResultRequest> | undefined): boolean {
     return proto3.util.equals(RateTestResultRequest, a, b);
+  }
+}
+
+/**
+ * generate all results for a workspace and model config
+ *
+ * @generated from message eval.v1.SyntheticGenerationRequest
+ */
+export class SyntheticGenerationRequest extends Message<SyntheticGenerationRequest> {
+  /**
+   * @generated from field: string workspace_id = 1;
+   */
+  workspaceId = "";
+
+  /**
+   * @generated from field: string model_config_name = 2;
+   */
+  modelConfigName = "";
+
+  /**
+   * @generated from field: uint32 version_number = 3;
+   */
+  versionNumber = 0;
+
+  /**
+   * @generated from field: uint32 system_prompt_version_number = 4;
+   */
+  systemPromptVersionNumber = 0;
+
+  constructor(data?: PartialMessage<SyntheticGenerationRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "eval.v1.SyntheticGenerationRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "workspace_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "model_config_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "version_number", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 4, name: "system_prompt_version_number", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SyntheticGenerationRequest {
+    return new SyntheticGenerationRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SyntheticGenerationRequest {
+    return new SyntheticGenerationRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SyntheticGenerationRequest {
+    return new SyntheticGenerationRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SyntheticGenerationRequest | PlainMessage<SyntheticGenerationRequest> | undefined, b: SyntheticGenerationRequest | PlainMessage<SyntheticGenerationRequest> | undefined): boolean {
+    return proto3.util.equals(SyntheticGenerationRequest, a, b);
   }
 }
 
