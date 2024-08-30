@@ -146,11 +146,15 @@ type variableKV struct {
 	VariableValue string `xml:"variable_value"`
 }
 
+type generatedTestCase struct {
+	Case []variableKV `xml:"variable"`
+}
+
 type generatedTestCaseOutput struct {
-	XMLName                xml.Name     `xml:"reply"`
-	Summary                string       `xml:"summary"`
-	VariableConsiderations string       `xml:"variable_considerations"`
-	TestCase               []variableKV `xml:"test_cases>case"`
+	XMLName                xml.Name            `xml:"reply"`
+	Summary                string              `xml:"summary"`
+	VariableConsiderations string              `xml:"variable_considerations"`
+	TestCase               []generatedTestCase `xml:"test_cases>case"`
 }
 
 // GenerateTestCase generates a test case based on the given input.
@@ -164,7 +168,7 @@ func (s *Service) GenerateTestCase(ctx context.Context, req *connect.Request[eva
 
 	// load workspace
 	var workspace Workspace
-	result := s.db.Model(&Workspace{}).Where("id = ?", req.Msg.WorkspaceId).First(&workspace)
+	result := s.db.Preload("SystemPrompts").Model(&Workspace{}).Where("id = ?", req.Msg.WorkspaceId).First(&workspace)
 	if result.Error != nil {
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to load workspace: %v", result.Error))
 	}
@@ -190,7 +194,9 @@ func (s *Service) GenerateTestCase(ctx context.Context, req *connect.Request[eva
 	}
 
 	exampleValuesSb := strings.Builder{}
-	nExamples := int(math.Min(float64(len(testCases)), 3))
+	// NB chua: this should probably be customizable / easier to configure.
+	// whatever, input tokens are cheap enough.
+	nExamples := int(math.Min(float64(len(testCases)), 100))
 	for i, tc := range testCases {
 		if i >= nExamples {
 			break
@@ -214,8 +220,18 @@ func (s *Service) GenerateTestCase(ctx context.Context, req *connect.Request[eva
 		"PROMPT_TEMPLATE": promptVersion.Content,
 		"VARIABLES":       variableSb.String(),
 		"EXAMPLE_VALUES":  exampleValuesSb.String(),
+		"N_TEST_CASES":    fmt.Sprintf("%v", req.Msg.NTestCases),
+	}
+	sysPrompt := workspace.CurrentSystemPrompt()
+	if sysPrompt != nil {
+		vars["SYSTEM_PROMPT"] = sysPrompt.Content
 	}
 	llmPrompt := llmutils.ReplacePromptVariables(generateTestCasePrompt, vars)
+
+	// add optional seed prompt
+	if req.Msg.SeedPrompt != nil && *req.Msg.SeedPrompt != "" {
+		llmPrompt += "\n\n" + "The user requests that your new examples be inspired by the following seed phrases: \n" + *req.Msg.SeedPrompt
+	}
 
 	logger.Debug("inferring prompt", "prompt", llmPrompt, "vars", vars)
 
@@ -230,7 +246,7 @@ func (s *Service) GenerateTestCase(ctx context.Context, req *connect.Request[eva
 		ModelConfig: modelConfig,
 		Messages:    msgs,
 		MessageOptions: llm.MessageOptions{
-			MaxTokens:   768,
+			MaxTokens:   4000,
 			Temperature: 1.2,
 		},
 	}
@@ -246,29 +262,36 @@ func (s *Service) GenerateTestCase(ctx context.Context, req *connect.Request[eva
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to parse response: %v", err))
 	}
-	outVars := make(map[string]*evalv1.VariableValue)
-	for _, kv := range parsedOutput.TestCase {
-		outVars[strings.TrimSpace(kv.VariableKey)] = &evalv1.VariableValue{Value: &evalv1.VariableValue_TextValue{TextValue: strings.TrimSpace(kv.VariableValue)}}
-	}
+	logger.Debug("parsed output", "output", parsedOutput)
 
-	tc := &TestCase{
-		ID:               xid.New().String(),
-		WorkspaceID:      req.Msg.WorkspaceId,
-		VariableValues:   variableValuesFromProto(outVars),
-		HasBeenEvaluated: false,
-	}
-	tcResult := s.db.Create(tc)
-	if tcResult.Error != nil {
-		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to create test case: %v", tcResult.Error))
-	}
+	testcases := make([]*evalv1.TestCase, 0)
 
-	res := connect.NewResponse(&evalv1.GenerateTestCaseResponse{
-		TestCase: &evalv1.TestCase{
+	for _, c := range parsedOutput.TestCase {
+		outVars := make(map[string]*evalv1.VariableValue)
+		for _, kv := range c.Case {
+			outVars[strings.TrimSpace(kv.VariableKey)] = &evalv1.VariableValue{Value: &evalv1.VariableValue_TextValue{TextValue: strings.TrimSpace(kv.VariableValue)}}
+		}
+		tc := &TestCase{
+			ID:               xid.New().String(),
+			WorkspaceID:      req.Msg.WorkspaceId,
+			VariableValues:   variableValuesFromProto(outVars),
+			HasBeenEvaluated: false,
+		}
+		tcResult := s.db.Create(tc)
+		if tcResult.Error != nil {
+			return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to create test case: %v", tcResult.Error))
+		}
+		testcases = append(testcases, &evalv1.TestCase{
 			Id:               tc.ID,
 			WorkspaceId:      tc.WorkspaceID,
 			VariableValues:   outVars,
 			HasBeenEvaluated: tc.HasBeenEvaluated,
-		}})
+		})
+	}
+
+	res := connect.NewResponse(&evalv1.GenerateTestCaseResponse{
+		TestCases: testcases,
+	})
 
 	res.Header().Set("Eval-Version", "v1")
 	return res, nil

@@ -6,6 +6,7 @@ import {
     GetWorkspaceResponse,
     ListTestCasesRequest,
     RateTestResultRequest,
+    SyntheticGenerationRequest,
     TestCase,
     TestResult,
     Variable,
@@ -23,6 +24,10 @@ import ModelConfigDialog from "@/components/ModelConfigDialog.tsx";
 import {Badge} from "@/components/ui/badge.tsx";
 import XMLViewer from 'react-xml-viewer'
 import {Copy, PlayIcon, ThumbsDown, ThumbsUp} from "lucide-react";
+import {cn} from "@/lib/utils.ts";
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select.tsx";
+import yaml from 'js-yaml';
+
 
 interface PromptTesterProps {
     workspaceId: string;
@@ -44,9 +49,9 @@ type ListTestCasesRequestWithoutMethods = Omit<
 
 type TestResultWithoutMethods = Omit<TestResult, "toJSON" | "toProtobuf" | "clone">;
 
-const EnhancedTableCell = ({matchingResult, xmlMode, versionNumber, onRunTest, handleRating}) => {
+const EnhancedTableCell = ({matchingResult, xmlMode, versionNumber, onRunTest, handleRating, expanded}) => {
     const handleCopy = () => {
-        navigator.clipboard.writeText(matchingResult?.content).then(() => {
+        navigator.clipboard.writeText(matchingResult?.response.replace(/\\n/g, '\n')).then(() => {
             // You can add a toast notification here if you want
             console.log('Copied to clipboard');
         });
@@ -75,22 +80,28 @@ const EnhancedTableCell = ({matchingResult, xmlMode, versionNumber, onRunTest, h
                 {/* Separator */}
                 <Button variant="ghost" size="icon" onClick={onThumbsUp} title="Thumbs Up"
                         disabled={matchingResult?.rating === 1}>
-                    <ThumbsUp className="h-4 w-4 text-gray-600" color={matchingResult?.rating === 1 ? "green" : "gray"}/>
+                    <ThumbsUp className="h-4 w-4 text-gray-600"
+                              color={matchingResult?.rating === 1 ? "green" : "gray"}/>
                 </Button>
                 <Button variant="ghost" size="icon" onClick={onThumbsDown} title="Thumbs Down"
                         disabled={matchingResult?.rating === -1}>
-                    <ThumbsDown className="h-4 w-4 text-gray-600" color={matchingResult?.rating === -1 ? "red" : "gray"}/>
+                    <ThumbsDown className="h-4 w-4 text-gray-600"
+                                color={matchingResult?.rating === -1 ? "red" : "gray"}/>
                 </Button>
             </div>
         );
     };
 
     const ContentRenderer = ({content, xmlMode}) => (
-        <div className="max-h-40 overflow-auto max-w-md text-wrap text-xs">
+
+        <div
+            className={cn(expanded ? "h-[960px]" : "h-[120px]", "overflow-auto max-w-md text-wrap text-xs items-start",)}>
             {xmlMode ? (
-                <XMLViewer xml={content} collapsible/>
+                <XMLViewer xml={content.replace(/\\n/g, '\n')} collapsible/>
             ) : (
-                <pre>{content}</pre>
+                <pre className={"flex max-w-md text-wrap text-xs items-start"}>
+                    {content.replace(/\\n/g, '\n')}
+                </pre>
             )}
         </div>
     );
@@ -98,7 +109,7 @@ const EnhancedTableCell = ({matchingResult, xmlMode, versionNumber, onRunTest, h
     return (
         <TableCell className="relative">
             {matchingResult ? (
-                <>
+                <div>
                     <ContentRenderer
                         content={matchingResult.response}
                         xmlMode={xmlMode}
@@ -113,7 +124,7 @@ const EnhancedTableCell = ({matchingResult, xmlMode, versionNumber, onRunTest, h
                             onThumbsDown={onThumbsDown}
                         />
                     </div>
-                </>
+                </div>
             ) : (
                 <div className="flex flex-row justify-between items-center">
                     <Badge variant="outline">
@@ -126,7 +137,7 @@ const EnhancedTableCell = ({matchingResult, xmlMode, versionNumber, onRunTest, h
                             size="sm"
                             onClick={onRunTest}
                         >
-                            <PlayIcon className="mr-2 h-4 w-4" />
+                            <PlayIcon className="mr-2 h-4 w-4"/>
                             Run
                         </Button>
                     </div>
@@ -147,27 +158,42 @@ const PromptTester: React.FC<PromptTesterProps> = ({
     const [testResults, setTestResults] = useState<TestResultWithoutMethods[]>([]);
     const [variables, setVariables] = useState<Variable[]>([]);
     const [activeConfigs, setActiveConfigs] = useState<WorkspaceConfig[]>([]);
+    const [expandedRowNumber, setExpandedRowNumber] = useState<number>(-1);
+    const [currentPage, setCurrentPage] = useState<number>(1);
+    const [itemsPerPage, setItemsPerPage] = useState<number>(10);
+    const [totalPages, setTotalPages] = useState<number>(1);
+    const [seedPrompt, setSeedPrompt] = useState<string>('');
     const client = useConnectClient();
 
     useEffect(() => {
-        const fetchTestCases = async () => {
-            const req: ListTestCasesRequestWithoutMethods = {
-                workspaceId: workspaceId,
-                page: 1,
-                pageSize: 10,
-            };
-            try {
-                const response = await client.listTestCases(req);
-                setTestCases(response.testCases);
-                setTestResults(response.testResults);
-                console.log(response);
-            } catch (error) {
-                console.error("Error fetching test cases:", error);
-            }
-        };
-
         fetchTestCases();
-    }, [workspaceId, client]);
+    }, [workspaceId, client, currentPage, itemsPerPage]);
+
+    const fetchTestCases = async () => {
+        const req: ListTestCasesRequestWithoutMethods = {
+            workspaceId: workspaceId,
+            page: currentPage,
+            pageSize: itemsPerPage,
+        };
+        try {
+            const response = await client.listTestCases(req);
+            setTestCases(response.testCases);
+            setTestResults(response.testResults);
+            const totalPageCount = Math.ceil(response.totalCount / itemsPerPage);
+            setTotalPages(totalPageCount);
+        } catch (error) {
+            console.error("Error fetching test cases:", error);
+        }
+    };
+
+    const handlePageChange = (newPage: number) => {
+        setCurrentPage(newPage);
+    };
+
+    const handleItemsPerPageChange = (newItemsPerPage: number) => {
+        setItemsPerPage(newItemsPerPage);
+        setCurrentPage(1); // Reset to first page when changing items per page
+    };
 
     useEffect(() => {
         if (version?.variables) {
@@ -180,6 +206,40 @@ const PromptTester: React.FC<PromptTesterProps> = ({
         }
     }, [version]);
 
+    const handleExpandRow = (rowNumber: number) => {
+        if (expandedRowNumber === rowNumber) {
+            setExpandedRowNumber(-1);
+            return;
+        }
+        setExpandedRowNumber(rowNumber);
+    }
+
+    const handleExportToYAML = () => {
+        const exportData = {
+            workspaceId,
+            variables,
+            testCases: testCases.map(testCase => ({
+                ...testCase,
+                results: testResults.filter(result => result.testCaseId === testCase.id).filter(result => activeConfigs.map(config => config.id).includes(result.workspaceConfigId))
+            })),
+        };
+
+        const yamlString = yaml.dump(exportData, {
+            skipInvalid: true,
+            noRefs: true,
+        });
+
+        const blob = new Blob([yamlString], { type: 'text/yaml' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `prompt_tester_export_${new Date().toISOString()}.yaml`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    };
+
     const handleRunTest = async (
         testCase: TestCaseWithoutMethods,
         versionNumber: number,
@@ -191,6 +251,7 @@ const PromptTester: React.FC<PromptTesterProps> = ({
                 workspaceId: workspaceId,
                 testCase: testCase,
                 versionNumber: versionNumber,
+                systemPromptVersionNumber: workspace?.workspace?.currentSystemPromptVersionNumber,
             };
             const response = await client.evaluate(req);
 
@@ -248,21 +309,64 @@ const PromptTester: React.FC<PromptTesterProps> = ({
         );
     };
 
-    const handleGenerateTestCase = async () => {
+    const handleSyntheticGenerate = async () => {
+        const req = {
+            workspaceId: workspaceId,
+            modelConfigName: activeConfigs[0].name,
+            versionNumber: version?.versionNumber,
+            systemPromptVersionNumber: workspace?.workspace?.currentSystemPromptVersionNumber,
+        } as Partial<SyntheticGenerationRequest>;
+        try {
+            const response = await client.syntheticGeneration(req);
+            console.log(response);
+
+            // Update test results
+            setTestResults((prevTestResults) => [
+                ...prevTestResults,
+                ...response.result,
+            ]);
+
+            // Update test cases
+            setTestCases((prevTestCases) => {
+                const updatedTestCases = [...prevTestCases];
+                response.result.forEach((result) => {
+                    const index = updatedTestCases.findIndex((tc) => tc.id === result.testCaseId);
+                    if (index !== -1) {
+                        updatedTestCases[index] = {
+                            ...updatedTestCases[index],
+                            hasBeenEvaluated: true,
+                            // Add any other properties you want to update
+                        };
+                    }
+                });
+                return updatedTestCases;
+            });
+
+        } catch (error) {
+            console.error("Error generating synthetic test cases:", error);
+        }
+    };
+
+    const handleGenerateTestCase = async (numCases: number) => {
         const req: Partial<GenerateTestCaseRequest> = {
             versionNumber: version?.versionNumber,
             workspaceId: workspaceId,
+            nTestCases: numCases,
         };
+        if (seedPrompt && seedPrompt.length > 0) {
+            req.seedPrompt = seedPrompt;
+        }
         try {
             const response = await client.generateTestCase(req);
-            if (!response.testCase) {
+            if (!response.testCases) {
                 return;
             }
-            setTestCases([...testCases, response.testCase]);
+            setTestCases([...testCases, ...response.testCases]);
         } catch (error) {
             console.error("Error generating test cases:", error);
         }
     };
+
     const handleDeleteTestCase = async (testCaseId: string | undefined) => {
         if (!testCaseId) {
             return;
@@ -360,7 +464,7 @@ const PromptTester: React.FC<PromptTesterProps> = ({
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {testCases.map((testCase) => (
+                    {testCases.map((testCase, index) => (
                         <TableRow key={testCase.id}>
                             {variables.map((variable) => (
                                 <TableCell key={variable.name}>
@@ -382,6 +486,7 @@ const PromptTester: React.FC<PromptTesterProps> = ({
                                                                   xmlMode={xmlMode}
                                                                   versionNumber={version.versionNumber}
                                                                   handleRating={handleRating}
+                                                                  expanded={expandedRowNumber === index}
                                         />;
 
                                     })}
@@ -395,22 +500,69 @@ const PromptTester: React.FC<PromptTesterProps> = ({
                                 >
                                     Delete
                                 </Button>
+                                <Button variant={"outline"} size={"sm"}
+                                        onClick={() => handleExpandRow(index)}>
+                                    Expand
+                                </Button>
                             </TableCell>
                         </TableRow>
                     ))}
                 </TableBody>
             </Table>
 
-            <div className="flex space-x-2">
-                <Button onClick={handleAddRow}>+ Add Row</Button>
-                <Button onClick={handleGenerateTestCase}>Generate Test Case</Button>
-                <Button variant="outline">Import Test Cases</Button>
-                <Button variant="outline">Export to CSV</Button>
-                <ModelConfigDialog
-                    workspaceId={workspaceId}
-                    onConfigsChange={setActiveConfigs}
-                    configs={workspace?.workspace?.workspaceConfigs || []}
-                />
+            <div className="flex justify-between items-center mt-4">
+                <div className="flex items-center space-x-2">
+                    <span>Items per page:</span>
+                    <Select value={itemsPerPage.toString()}
+                            onValueChange={(value) => handleItemsPerPageChange(Number(value))}>
+                        <SelectTrigger className="w-[70px]">
+                            <SelectValue/>
+                        </SelectTrigger>
+                        <SelectContent>
+                            {[5, 10, 20, 50, 100].map((num) => (
+                                <SelectItem key={num} value={num.toString()}>{num}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+                <div className="flex items-center space-x-2">
+                    <Button
+                        onClick={() => handlePageChange(currentPage - 1)}
+                        disabled={currentPage === 1}
+                    >
+                        Previous
+                    </Button>
+                    <span>{`Page ${currentPage} of ${totalPages}`}</span>
+                    <Button
+                        onClick={() => handlePageChange(currentPage + 1)}
+                        disabled={currentPage === totalPages}
+                    >
+                        Next
+                    </Button>
+                </div>
+            </div>
+
+            <div className="flex space-x-2 justify-between">
+                <div className={"space-x-2"}>
+                    <Button onClick={handleAddRow}>+ Add Row</Button>
+                    <Button onClick={() => handleGenerateTestCase(1)}>Generate Test Case</Button>
+                    <Button onClick={() => handleGenerateTestCase(10)}>Generate 10 Test Cases</Button>
+                    <Button onClick={handleSyntheticGenerate}>Synthetic Generate</Button>
+                </div>
+                <div className={"space-x-2"}>
+                    {/*<Button variant="outline">Import Test Cases</Button>*/}
+                    <Button variant="outline" onClick={handleExportToYAML}>Export to YAML</Button>
+
+                    <ModelConfigDialog
+                        workspaceId={workspaceId}
+                        onConfigsChange={setActiveConfigs}
+                        configs={workspace?.workspace?.workspaceConfigs || []}
+                    />
+                </div>
+            </div>
+            <div>
+                <Textarea value={seedPrompt} onChange={(e) => setSeedPrompt(e.target.value)}
+                          placeholder="Test case generation seed prompt"/>
             </div>
         </div>
     );

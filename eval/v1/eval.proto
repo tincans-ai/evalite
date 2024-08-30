@@ -53,6 +53,7 @@ message EvaluationRequest {
   string workspace_id = 1;
   TestCase test_case = 2;
   uint32 version_number = 3;
+  uint32 system_prompt_version_number = 4;
 }
 
 message EvaluationResponse {
@@ -102,7 +103,15 @@ message Workspace {
   repeated WorkspaceConfig workspace_configs = 8;
   repeated uint32 active_version_numbers = 9;
 
-  bool XMLMode = 10;
+  message SystemPrompt {
+    uint32 version_number = 1;
+    string content = 2;
+  }
+
+  repeated SystemPrompt system_prompts = 10;
+  uint32 current_system_prompt_version_number = 11;
+
+  bool XMLMode = 12;
 }
 
 message TestCase {
@@ -226,12 +235,14 @@ message GetModelConfigResponse {
 message UpdateWorkspaceRequest {
   string workspace_id = 1;
   string new_content = 2;
-  optional string new_title = 3;
+  string new_system_prompt = 3;
+  optional string new_title = 4;
 }
 
 message UpdateWorkspaceResponse {
   uint32 new_version_number = 1;
   string content = 2;
+  string system_prompt = 3;
   google.protobuf.Timestamp updated_at = 4;
 }
 
@@ -240,10 +251,13 @@ message GenerateTestCaseRequest {
   uint32 version_number = 2;
   repeated TestCase test_cases = 3;
   optional string custom_cot = 4;
+
+  uint32 n_test_cases = 5;
+  optional string seed_prompt = 6;
 }
 
 message GenerateTestCaseResponse {
-  TestCase test_case = 1;
+  repeated TestCase test_cases = 1;
 }
 
 message DeleteWorkspaceConfigRequest {
@@ -273,9 +287,19 @@ message RateTestResultRequest {
   int32 rating = 2;
 }
 
+// generate all results for a workspace and model config
+message SyntheticGenerationRequest {
+  string workspace_id = 1;
+  string model_config_name = 2;
+
+  uint32 version_number = 3;
+  uint32 system_prompt_version_number = 4;
+}
+
 // Extended EvaluationService
 service EvaluationService {
   rpc Evaluate(EvaluationRequest) returns (EvaluationResponse) {}
+  rpc SyntheticGeneration(SyntheticGenerationRequest) returns (EvaluationResponse) {}
 
   // Workspace operations
   rpc CreateWorkspace(CreateWorkspaceRequest) returns (CreateWorkspaceResponse) {}

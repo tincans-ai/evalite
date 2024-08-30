@@ -342,6 +342,11 @@ export class EvaluationRequest extends Message<EvaluationRequest> {
    */
   versionNumber = 0;
 
+  /**
+   * @generated from field: uint32 system_prompt_version_number = 4;
+   */
+  systemPromptVersionNumber = 0;
+
   constructor(data?: PartialMessage<EvaluationRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -353,6 +358,7 @@ export class EvaluationRequest extends Message<EvaluationRequest> {
     { no: 1, name: "workspace_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "test_case", kind: "message", T: TestCase },
     { no: 3, name: "version_number", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 4, name: "system_prompt_version_number", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): EvaluationRequest {
@@ -624,7 +630,17 @@ export class Workspace extends Message<Workspace> {
   activeVersionNumbers: number[] = [];
 
   /**
-   * @generated from field: bool XMLMode = 10;
+   * @generated from field: repeated eval.v1.Workspace.SystemPrompt system_prompts = 10;
+   */
+  systemPrompts: Workspace_SystemPrompt[] = [];
+
+  /**
+   * @generated from field: uint32 current_system_prompt_version_number = 11;
+   */
+  currentSystemPromptVersionNumber = 0;
+
+  /**
+   * @generated from field: bool XMLMode = 12;
    */
   XMLMode = false;
 
@@ -645,7 +661,9 @@ export class Workspace extends Message<Workspace> {
     { no: 7, name: "current_prompt_version_number", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 8, name: "workspace_configs", kind: "message", T: WorkspaceConfig, repeated: true },
     { no: 9, name: "active_version_numbers", kind: "scalar", T: 13 /* ScalarType.UINT32 */, repeated: true },
-    { no: 10, name: "XMLMode", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 10, name: "system_prompts", kind: "message", T: Workspace_SystemPrompt, repeated: true },
+    { no: 11, name: "current_system_prompt_version_number", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 12, name: "XMLMode", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Workspace {
@@ -717,6 +735,49 @@ export class Workspace_Prompt extends Message<Workspace_Prompt> {
 
   static equals(a: Workspace_Prompt | PlainMessage<Workspace_Prompt> | undefined, b: Workspace_Prompt | PlainMessage<Workspace_Prompt> | undefined): boolean {
     return proto3.util.equals(Workspace_Prompt, a, b);
+  }
+}
+
+/**
+ * @generated from message eval.v1.Workspace.SystemPrompt
+ */
+export class Workspace_SystemPrompt extends Message<Workspace_SystemPrompt> {
+  /**
+   * @generated from field: uint32 version_number = 1;
+   */
+  versionNumber = 0;
+
+  /**
+   * @generated from field: string content = 2;
+   */
+  content = "";
+
+  constructor(data?: PartialMessage<Workspace_SystemPrompt>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "eval.v1.Workspace.SystemPrompt";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "version_number", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 2, name: "content", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Workspace_SystemPrompt {
+    return new Workspace_SystemPrompt().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): Workspace_SystemPrompt {
+    return new Workspace_SystemPrompt().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): Workspace_SystemPrompt {
+    return new Workspace_SystemPrompt().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: Workspace_SystemPrompt | PlainMessage<Workspace_SystemPrompt> | undefined, b: Workspace_SystemPrompt | PlainMessage<Workspace_SystemPrompt> | undefined): boolean {
+    return proto3.util.equals(Workspace_SystemPrompt, a, b);
   }
 }
 
@@ -1711,7 +1772,12 @@ export class UpdateWorkspaceRequest extends Message<UpdateWorkspaceRequest> {
   newContent = "";
 
   /**
-   * @generated from field: optional string new_title = 3;
+   * @generated from field: string new_system_prompt = 3;
+   */
+  newSystemPrompt = "";
+
+  /**
+   * @generated from field: optional string new_title = 4;
    */
   newTitle?: string;
 
@@ -1725,7 +1791,8 @@ export class UpdateWorkspaceRequest extends Message<UpdateWorkspaceRequest> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "workspace_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "new_content", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "new_title", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 3, name: "new_system_prompt", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "new_title", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateWorkspaceRequest {
@@ -1760,6 +1827,11 @@ export class UpdateWorkspaceResponse extends Message<UpdateWorkspaceResponse> {
   content = "";
 
   /**
+   * @generated from field: string system_prompt = 3;
+   */
+  systemPrompt = "";
+
+  /**
    * @generated from field: google.protobuf.Timestamp updated_at = 4;
    */
   updatedAt?: Timestamp;
@@ -1774,6 +1846,7 @@ export class UpdateWorkspaceResponse extends Message<UpdateWorkspaceResponse> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "new_version_number", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 2, name: "content", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "system_prompt", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "updated_at", kind: "message", T: Timestamp },
   ]);
 
@@ -1818,6 +1891,16 @@ export class GenerateTestCaseRequest extends Message<GenerateTestCaseRequest> {
    */
   customCot?: string;
 
+  /**
+   * @generated from field: uint32 n_test_cases = 5;
+   */
+  nTestCases = 0;
+
+  /**
+   * @generated from field: optional string seed_prompt = 6;
+   */
+  seedPrompt?: string;
+
   constructor(data?: PartialMessage<GenerateTestCaseRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1830,6 +1913,8 @@ export class GenerateTestCaseRequest extends Message<GenerateTestCaseRequest> {
     { no: 2, name: "version_number", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 3, name: "test_cases", kind: "message", T: TestCase, repeated: true },
     { no: 4, name: "custom_cot", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 5, name: "n_test_cases", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 6, name: "seed_prompt", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GenerateTestCaseRequest {
@@ -1854,9 +1939,9 @@ export class GenerateTestCaseRequest extends Message<GenerateTestCaseRequest> {
  */
 export class GenerateTestCaseResponse extends Message<GenerateTestCaseResponse> {
   /**
-   * @generated from field: eval.v1.TestCase test_case = 1;
+   * @generated from field: repeated eval.v1.TestCase test_cases = 1;
    */
-  testCase?: TestCase;
+  testCases: TestCase[] = [];
 
   constructor(data?: PartialMessage<GenerateTestCaseResponse>) {
     super();
@@ -1866,7 +1951,7 @@ export class GenerateTestCaseResponse extends Message<GenerateTestCaseResponse> 
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "eval.v1.GenerateTestCaseResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "test_case", kind: "message", T: TestCase },
+    { no: 1, name: "test_cases", kind: "message", T: TestCase, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GenerateTestCaseResponse {
@@ -2110,6 +2195,63 @@ export class RateTestResultRequest extends Message<RateTestResultRequest> {
 
   static equals(a: RateTestResultRequest | PlainMessage<RateTestResultRequest> | undefined, b: RateTestResultRequest | PlainMessage<RateTestResultRequest> | undefined): boolean {
     return proto3.util.equals(RateTestResultRequest, a, b);
+  }
+}
+
+/**
+ * generate all results for a workspace and model config
+ *
+ * @generated from message eval.v1.SyntheticGenerationRequest
+ */
+export class SyntheticGenerationRequest extends Message<SyntheticGenerationRequest> {
+  /**
+   * @generated from field: string workspace_id = 1;
+   */
+  workspaceId = "";
+
+  /**
+   * @generated from field: string model_config_name = 2;
+   */
+  modelConfigName = "";
+
+  /**
+   * @generated from field: uint32 version_number = 3;
+   */
+  versionNumber = 0;
+
+  /**
+   * @generated from field: uint32 system_prompt_version_number = 4;
+   */
+  systemPromptVersionNumber = 0;
+
+  constructor(data?: PartialMessage<SyntheticGenerationRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "eval.v1.SyntheticGenerationRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "workspace_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "model_config_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "version_number", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 4, name: "system_prompt_version_number", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SyntheticGenerationRequest {
+    return new SyntheticGenerationRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SyntheticGenerationRequest {
+    return new SyntheticGenerationRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SyntheticGenerationRequest {
+    return new SyntheticGenerationRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SyntheticGenerationRequest | PlainMessage<SyntheticGenerationRequest> | undefined, b: SyntheticGenerationRequest | PlainMessage<SyntheticGenerationRequest> | undefined): boolean {
+    return proto3.util.equals(SyntheticGenerationRequest, a, b);
   }
 }
 

@@ -9,7 +9,7 @@ import {
     GetWorkspaceResponse,
     SetVersionActiveRequest,
     SetXMLModeRequest,
-    Workspace_Prompt
+    Workspace_Prompt, Workspace_SystemPrompt
 } from "@/lib/gen/eval/v1/eval_pb.ts";
 import {useConnectClient} from "@/providers/ConnectProvider.tsx";
 import {Badge} from "@/components/ui/badge.tsx";
@@ -21,6 +21,7 @@ const WorkspacePage = () => {
     const [smallDefault, setSmallDefault] = useState<string>('');
     const [largeDefault, setLargeDefault] = useState<string>('');
     const [currentVersion, setCurrentVersion] = useState<Workspace_Prompt | undefined>(undefined);
+    const [currentSystemPrompt, setCurrentSystemPrompt] = useState<Workspace_SystemPrompt | undefined>(undefined);
     const [activeVersions, setActiveVersions] = useState<Workspace_Prompt[]>([]);
     const [xmlMode, setXmlMode] = useState(false);
     const client = useConnectClient();
@@ -41,6 +42,11 @@ const WorkspacePage = () => {
             console.log(activeVersions);
             setActiveVersions(activeVersions);
             setXmlMode(res.workspace.XMLMode);
+
+            const systemPromptVersionNumber = res.workspace.currentSystemPromptVersionNumber || res.workspace.systemPrompts?.length - 1 || 0;
+
+            setCurrentSystemPrompt(res.workspace?.systemPrompts.find((version) => version.versionNumber === systemPromptVersionNumber));
+
         });
     }, [workspaceId])
 
@@ -102,7 +108,9 @@ const WorkspacePage = () => {
                     <TabsTrigger value="tester">Prompt Tester</TabsTrigger>
                 </TabsList>
                 <TabsContent value="generator">
-                    <PromptGenerator workspaceId={workspaceId} workspace={workspace} version={currentVersion}/>
+                    <PromptGenerator workspaceId={workspaceId} workspace={workspace} version={currentVersion}
+                    systemPrompt={currentSystemPrompt}
+                    />
                 </TabsContent>
                 <TabsContent value="tester">
                     <PromptTester workspaceId={workspaceId} workspace={workspace} version={currentVersion}

@@ -161,6 +161,9 @@ func (s *Service) UpdateWorkspace(ctx context.Context, req *connect.Request[eval
 	newVersion := workspace.CreatePrompt(req.Msg.NewContent, variables)
 	s.db.Create(newVersion)
 
+	newSystemPrompt := workspace.CreateSystemPrompt(req.Msg.NewSystemPrompt)
+	s.db.Create(newSystemPrompt)
+
 	// Save the new version and update the prompt
 	if err := s.db.Save(&workspace).Error; err != nil {
 		return nil, err
@@ -169,6 +172,7 @@ func (s *Service) UpdateWorkspace(ctx context.Context, req *connect.Request[eval
 	res := connect.NewResponse(&evalv1.UpdateWorkspaceResponse{
 		NewVersionNumber: workspace.CurrentPromptVersionNumber,
 		Content:          newVersion.Content,
+		SystemPrompt:     newSystemPrompt.Content,
 	})
 	return res, nil
 }
