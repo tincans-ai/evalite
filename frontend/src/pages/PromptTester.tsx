@@ -5,7 +5,8 @@ import {
     GenerateTestCaseRequest,
     GetWorkspaceResponse,
     ListTestCasesRequest,
-    RateTestResultRequest, SyntheticGenerationRequest,
+    RateTestResultRequest,
+    SyntheticGenerationRequest,
     TestCase,
     TestResult,
     Variable,
@@ -25,6 +26,8 @@ import XMLViewer from 'react-xml-viewer'
 import {Copy, PlayIcon, ThumbsDown, ThumbsUp} from "lucide-react";
 import {cn} from "@/lib/utils.ts";
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select.tsx";
+import yaml from 'js-yaml';
+
 
 interface PromptTesterProps {
     workspaceId: string;
@@ -210,6 +213,32 @@ const PromptTester: React.FC<PromptTesterProps> = ({
         }
         setExpandedRowNumber(rowNumber);
     }
+
+    const handleExportToYAML = () => {
+        const exportData = {
+            workspaceId,
+            variables,
+            testCases: testCases.map(testCase => ({
+                ...testCase,
+                results: testResults.filter(result => result.testCaseId === testCase.id).filter(result => activeConfigs.map(config => config.id).includes(result.workspaceConfigId))
+            })),
+        };
+
+        const yamlString = yaml.dump(exportData, {
+            skipInvalid: true,
+            noRefs: true,
+        });
+
+        const blob = new Blob([yamlString], { type: 'text/yaml' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `prompt_tester_export_${new Date().toISOString()}.yaml`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    };
 
     const handleRunTest = async (
         testCase: TestCaseWithoutMethods,
@@ -513,18 +542,23 @@ const PromptTester: React.FC<PromptTesterProps> = ({
                 </div>
             </div>
 
-            <div className="flex space-x-2">
-                <Button onClick={handleAddRow}>+ Add Row</Button>
-                <Button onClick={() => handleGenerateTestCase(1)}>Generate Test Case</Button>
-                <Button onClick={() => handleGenerateTestCase(10)}>Generate 10 Test Cases</Button>
-                <Button onClick={handleSyntheticGenerate}>Synthetic Generate</Button>
-                {/*<Button variant="outline">Import Test Cases</Button>*/}
-                {/*<Button variant="outline">Export to CSV</Button>*/}
-                <ModelConfigDialog
-                    workspaceId={workspaceId}
-                    onConfigsChange={setActiveConfigs}
-                    configs={workspace?.workspace?.workspaceConfigs || []}
-                />
+            <div className="flex space-x-2 justify-between">
+                <div className={"space-x-2"}>
+                    <Button onClick={handleAddRow}>+ Add Row</Button>
+                    <Button onClick={() => handleGenerateTestCase(1)}>Generate Test Case</Button>
+                    <Button onClick={() => handleGenerateTestCase(10)}>Generate 10 Test Cases</Button>
+                    <Button onClick={handleSyntheticGenerate}>Synthetic Generate</Button>
+                </div>
+                <div className={"space-x-2"}>
+                    {/*<Button variant="outline">Import Test Cases</Button>*/}
+                    <Button variant="outline" onClick={handleExportToYAML}>Export to YAML</Button>
+
+                    <ModelConfigDialog
+                        workspaceId={workspaceId}
+                        onConfigsChange={setActiveConfigs}
+                        configs={workspace?.workspace?.workspaceConfigs || []}
+                    />
+                </div>
             </div>
             <div>
                 <Textarea value={seedPrompt} onChange={(e) => setSeedPrompt(e.target.value)}
