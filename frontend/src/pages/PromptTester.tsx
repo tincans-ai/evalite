@@ -5,7 +5,7 @@ import {
     GenerateTestCaseRequest,
     GetWorkspaceResponse,
     ListTestCasesRequest,
-    RateTestResultRequest,
+    RateTestResultRequest, SyntheticGenerationRequest,
     TestCase,
     TestResult,
     Variable,
@@ -286,7 +286,7 @@ const PromptTester: React.FC<PromptTesterProps> = ({
             modelConfigName: activeConfigs[0].name,
             versionNumber: version?.versionNumber,
             systemPromptVersionNumber: workspace?.workspace?.currentSystemPromptVersionNumber,
-        };
+        } as Partial<SyntheticGenerationRequest>;
         try {
             const response = await client.syntheticGeneration(req);
             console.log(response);
