@@ -63,7 +63,7 @@ func (s *Service) Evaluate(ctx context.Context, req *connect.Request[pb.Evaluati
 
 	workspaceConfigs := s.getActiveWorkspaceConfigs(workspace, testCase.ID, int32(req.Msg.VersionNumber))
 
-	results, err := s.processTestCaseWithConfigs(ctx, testCase, prompt, systemPrompt, workspaceConfigs)
+	results, err := s.processTestCaseWithConfigs(ctx, testCase, prompt, systemPrompt, workspaceConfigs, 1)
 	if err != nil {
 		return nil, err
 	}
@@ -97,15 +97,16 @@ func (s *Service) SyntheticGeneration(ctx context.Context, req *connect.Request[
 	prompt := workspace.PromptByVersion(req.Msg.VersionNumber)
 	systemPrompt := workspace.SystemPromptByVersion(req.Msg.SystemPromptVersionNumber)
 
+	logger.Debug("found %d test cases", "count", len(testCases))
 	var results []*pb.TestResult
 	for _, testCase := range testCases {
 		logger.Debug("processing test case", "test_case_id", testCase.ID)
-		caseResults, err := s.processTestCaseWithConfigs(ctx, testCase, prompt, systemPrompt, []WorkspaceConfig{*activeConfig})
+		caseResults, err := s.processTestCaseWithConfigs(ctx, testCase, prompt, systemPrompt, []WorkspaceConfig{*activeConfig}, len(testCases))
 		if err != nil {
 			logger.Error("failed to process test case", "err", err, "test_case_id", testCase.ID)
 			continue
 		}
-		logger.Debug("processed test case", "test_case_id", testCase.ID, "results", caseResults)
+		//logger.Debug("processed test case", "test_case_id", testCase.ID, "results", caseResults)
 		results = append(results, caseResults...)
 	}
 
@@ -117,11 +118,12 @@ func (s *Service) SyntheticGeneration(ctx context.Context, req *connect.Request[
 	return res, nil
 }
 
-func (s *Service) processTestCaseWithConfigs(ctx context.Context, testCase TestCase, prompt *Prompt, systemPrompt *SystemPrompt, configs []WorkspaceConfig) ([]*pb.TestResult, error) {
+func (s *Service) processTestCaseWithConfigs(ctx context.Context, testCase TestCase, prompt *Prompt, systemPrompt *SystemPrompt, configs []WorkspaceConfig, nTotalEvals int) ([]*pb.TestResult, error) {
 	vars := s.prepareVariables(testCase)
 	promptStr := llmutils.ReplacePromptVariables(prompt.Content, vars)
 
-	baseMessages := s.prepareBaseMessages(systemPrompt, promptStr, len(configs) > 5)
+	// should we cache the system prompt or not
+	baseMessages := s.prepareBaseMessages(systemPrompt, promptStr, nTotalEvals > 5)
 
 	var results []*pb.TestResult
 	var wg sync.WaitGroup
