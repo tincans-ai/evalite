@@ -9,7 +9,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/rs/cors v1.11.0
 	github.com/rs/xid v1.5.0
-	github.com/stillmatic/gollum v0.0.0-20240828020941-3a5592411407
+	github.com/stillmatic/gollum v0.0.0-20240901180452-8d6e66d55ab2
 	golang.org/x/net v0.28.0
 	google.golang.org/protobuf v1.34.2
 	gorm.io/datatypes v1.2.1

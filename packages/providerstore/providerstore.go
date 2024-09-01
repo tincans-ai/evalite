@@ -38,7 +38,7 @@ func NewProviderStore() *ProviderStore {
 
 	anthropicAPIKey := os.Getenv("ANTHROPIC_API_KEY")
 	if anthropicAPIKey != "" {
-		p.AddProvider(llm.ProviderAnthropic, anthropic.NewAnthropicProvider(anthropicAPIKey))
+		p.AddProvider(llm.ProviderAnthropic, anthropic.NewAnthropicProviderWithCache(anthropicAPIKey))
 	}
 
 	openaiAPIKey := os.Getenv("OPENAI_API_KEY")
