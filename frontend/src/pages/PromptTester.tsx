@@ -40,11 +40,11 @@ interface PromptTesterProps {
 type TestCaseWithoutMethods = Omit<TestCase, "toJSON" | "toProtobuf" | "clone">;
 type EvaluationRequestWithoutMethods = Omit<
     EvaluationRequest,
-    "toJSON" | "toProtobuf" | "clone"
+    "toJson" | "toProtobuf" | "clone" | "toJSON"
 >;
 type ListTestCasesRequestWithoutMethods = Omit<
     ListTestCasesRequest,
-    "toJSON" | "toProtobuf" | "clone"
+    "toJSON" | "toProtobuf" | "clone" | "toJson"
 >;
 
 type TestResultWithoutMethods = Omit<TestResult, "toJSON" | "toProtobuf" | "clone">;
@@ -122,6 +122,7 @@ const EnhancedTableCell = ({matchingResult, xmlMode, versionNumber, onRunTest, h
                             onCopy={handleCopy}
                             onThumbsUp={onThumbsUp}
                             onThumbsDown={onThumbsDown}
+                            onRetry={() => {}}
                         />
                     </div>
                 </div>
@@ -170,7 +171,7 @@ const PromptTester: React.FC<PromptTesterProps> = ({
     }, [workspaceId, client, currentPage, itemsPerPage]);
 
     const fetchTestCases = async () => {
-        const req: ListTestCasesRequestWithoutMethods = {
+        const req: Partial<ListTestCasesRequestWithoutMethods> = {
             workspaceId: workspaceId,
             page: currentPage,
             pageSize: itemsPerPage,
@@ -269,13 +270,9 @@ const PromptTester: React.FC<PromptTesterProps> = ({
     };
 
     const handleAddRow = () => {
-        const newTestCase: TestCaseWithoutMethods = {
-            id: `new-${Date.now()}`,
-            variableValues: {},
-            workspaceId: workspaceId,
-            hasBeenEvaluated: false,
-        };
-        setTestCases([...testCases, newTestCase]);
+        client.createTestCase({workspaceId: workspaceId}).then((response) => {
+            setTestCases([...testCases, response.testCase]);
+        })
     };
 
     const handleVariableTypeChange = (
@@ -288,6 +285,52 @@ const PromptTester: React.FC<PromptTesterProps> = ({
             ),
         );
     };
+
+    const handleImportYAML = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            try {
+                const yamlContent = e.target?.result as string;
+                const parsedData = yaml.load(yamlContent) as { [key: string]: any }[];
+
+                for (const item of parsedData) {
+                    const variableValues: { [key: string]: VariableValue } = {};
+
+                    for (const [key, value] of Object.entries(item)) {
+                        const variable = variables.find(v => v.name === key);
+                        if (variable) {
+                            switch (variable.type) {
+                                case VariableType.TEXT:
+                                    variableValues[key] = VariableValue.fromJson({ textValue: value as string });
+                                    break;
+                                case VariableType.IMAGE:
+                                    // Assuming image values are base64 encoded strings in the YAML
+                                    variableValues[key] = VariableValue.fromJson({ imageValue: value as string });
+                                    break;
+                            }
+                        }
+                    }
+
+                    try {
+                        const response = await client.createTestCase({
+                            workspaceId: workspaceId,
+                            variableValues: variableValues,
+                        });
+                        setTestCases(prevTestCases => [...prevTestCases, response.testCase]);
+                    } catch (error) {
+                        console.error("Error creating test case:", error);
+                    }
+                }
+            } catch (error) {
+                console.error("Error parsing YAML:", error);
+            }
+        };
+        reader.readAsText(file);
+    };
+
 
     const handleVariableValueChange = (
         testCaseId: string,
@@ -550,7 +593,9 @@ const PromptTester: React.FC<PromptTesterProps> = ({
                     <Button onClick={handleSyntheticGenerate}>Synthetic Generate</Button>
                 </div>
                 <div className={"space-x-2"}>
-                    {/*<Button variant="outline">Import Test Cases</Button>*/}
+                    <Button variant={"outline"} onClick={() => document.getElementById('yaml-import')?.click()}>
+                        Import Test Cases
+                    </Button>
                     <Button variant="outline" onClick={handleExportToYAML}>Export to YAML</Button>
 
                     <ModelConfigDialog
@@ -563,6 +608,13 @@ const PromptTester: React.FC<PromptTesterProps> = ({
             <div>
                 <Textarea value={seedPrompt} onChange={(e) => setSeedPrompt(e.target.value)}
                           placeholder="Test case generation seed prompt"/>
+                <Input
+                    type="file"
+                    accept=".yaml,.yml"
+                    onChange={handleImportYAML}
+                    style={{ display: 'none' }}
+                    id="yaml-import"
+                />
             </div>
         </div>
     );
